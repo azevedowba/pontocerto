@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponto Certo & Gestor de Jornada</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+        .glass-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-clock-rotate-left text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Ponto Certo</h1>
+                    <p class="text-xs text-slate-400">Gestor Inteligente de Jornada & VPN</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <nav class="hidden md:flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/50">
+                    <button onclick="switchTab('today')" id="tab-today" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-white bg-brand-600 shadow">
+                        <i class="fa-solid fa-calculator mr-1.5"></i> Hoje
+                    </button>
+                    <button onclick="switchTab('history')" id="tab-history" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-calendar-days mr-1.5"></i> Histórico
+                    </button>
+                    <button onclick="switchTab('vpn')" id="tab-vpn" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Automação VPN
+                    </button>
+                    <button onclick="switchTab('roadmap')" id="tab-roadmap" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-rocket mr-1.5"></i> Visão de Produto (SaaS)
+                    </button>
+                </nav>
+
+                <button onclick="toggleNotifications()" id="btn-notify" class="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-yellow-400 transition" title="Ativar Notificações">
+                    <i class="fa-solid fa-bell"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <div class="md:hidden flex justify-around border-t border-slate-800 bg-slate-900/95 py-2 px-1 text-xs">
+            <button onclick="switchTab('today')" id="mob-tab-today" class="flex flex-col items-center py-1 text-brand-500 font-medium">
+                <i class="fa-solid fa-calculator text-base mb-1"></i> Hoje
+            </button>
+            <button onclick="switchTab('history')" id="mob-tab-history" class="flex flex-col items-center py-1 text-slate-400">
+                <i class="fa-solid fa-calendar-days text-base mb-1"></i> Histórico
+            </button>
+            <button onclick="switchTab('vpn')" id="mob-tab-vpn" class="flex flex-col items-center py-1 text-slate-400">
+                <i class="fa-solid fa-shield-halved text-base mb-1"></i> VPN
+            </button>
+            <button onclick="switchTab('roadmap')" id="mob-tab-roadmap" class="flex flex-col items-center py-1 text-slate-400">
+                <i class="fa-solid fa-rocket text-base mb-1"></i> SaaS
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- VIEW 1: TODAY CALCULATOR & TRACKER -->
+        <section id="view-today" class="space-y-6">
+            <!-- Top Controls & Target Bar -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Form Card -->
+                <div class="lg:col-span-2 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-white">Batidas de Ponto do Dia</h2>
+                                <p class="text-xs text-slate-400">Insira os horários conforme seu registro na empresa</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/50">
+                            <span class="text-xs text-slate-400 pl-2">Meta:</span>
+                            <input type="text" id="target-work-hours" value="08:10" onchange="calculateTime()" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-brand-400 focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Inputs Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                        <!-- Entry 1 -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-sun text-amber-400 text-xs"></i> 1. Entrada Manhã
+                            </label>
+                            <input type="time" id="t-entry1" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+                        </div>
+                        <!-- Exit 1 -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-utensils text-orange-400 text-xs"></i> 2. Saída Almoço
+                            </label>
+                            <input type="time" id="t-exit1" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+                        </div>
+                        <!-- Entry 2 -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-briefcase text-blue-400 text-xs"></i> 3. Volta Almoço
+                            </label>
+                            <input type="time" id="t-entry2" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+                        </div>
+                        <!-- Exit 2 -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-house text-emerald-400 text-xs"></i> 4. Saída Tarde
+                            </label>
+                            <input type="time" id="t-exit2" oninput="calculateTime()" placeholder="Automático" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-emerald-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+                        </div>
+                    </div>
+
+                    <!-- Quick Fill Helpers -->
+                    <div class="flex flex-wrap items-center justify-between border-t border-slate-700/50 pt-4 gap-2">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="fillCurrentTime('t-entry1')" class="px-2.5 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                                <i class="fa-solid fa-play text-emerald-400 mr-1"></i> Bater Agora (Entrada)
+                            </button>
+                            <button onclick="fillCurrentTime('t-exit1')" class="px-2.5 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                                <i class="fa-solid fa-utensils text-amber-400 mr-1"></i> Ir pro Almoço
+                            </button>
+                            <button onclick="fillCurrentTime('t-entry2')" class="px-2.5 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+                                <i class="fa-solid fa-rotate-left text-blue-400 mr-1"></i> Voltar Almoço
+                            </button>
+                        </div>
+                        <button onclick="clearTodayInputs()" class="text-xs text-rose-400 hover:text-rose-300 transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Summary Dashboard Card -->
+                <div class="bg-gradient-to-b from-slate-800/80 to-slate-900/90 border border-slate-700/60 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Status da Jornada</span>
+                            <span id="badge-status" class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-700 text-slate-300">
+                                Aguardando dados
+                            </span>
+                        </div>
+
+                        <!-- Target Time Display -->
+                        <div class="text-center py-2">
+                            <p class="text-xs text-slate-400 mb-1">Horário Ideal de Saída Tarde</p>
+                            <div id="target-exit-display" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
+                                --:--
+                            </div>
+                            <p id="target-exit-subtext" class="text-xs text-slate-500 mt-1">Para cumprir 8h 10m de trabalho líquido</p>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="mt-6 space-y-2">
+                            <div class="flex justify-between text-xs font-medium">
+                                <span class="text-slate-400">Trabalhado: <strong id="worked-time-text" class="text-white">0h 00m</strong></span>
+                                <span class="text-slate-400">Falta: <strong id="remaining-time-text" class="text-brand-400">8h 10m</strong></span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 p-0.5 border border-slate-700">
+                                <div id="progress-bar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="mt-6 pt-4 border-t border-slate-700/50 flex items-center justify-between">
+                        <div class="text-xs text-slate-400">
+                            Saldo do Dia: <span id="hours-balance" class="font-bold text-slate-200">00:00</span>
+                        </div>
+                        <button onclick="saveTodayToHistory()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i> Salvar Registro
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Countdown & VPN Link Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Countdown Widget -->
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex items-center space-x-5">
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl shrink-0">
+                        <i class="fa-solid fa-hourglass-half animate-pulse"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-sm font-medium text-slate-300">Contagem Regressiva Viva</h3>
+                        <p id="countdown-text" class="text-2xl font-bold text-white tracking-tight">--:--:--</p>
+                        <p class="text-xs text-slate-400 mt-0.5" id="countdown-subtext">Calculando com base no horário atual...</p>
+                    </div>
+                </div>
+
+                <!-- Quick VPN Timer Link -->
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex items-center justify-between">
+                    <div class="space-y-1">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            Integração VPN
+                        </span>
+                        <h3 class="text-sm font-semibold text-white">Desconectar VPN ao Concluir</h3>
+                        <p class="text-xs text-slate-400" id="vpn-sync-desc">Sincronize a desconexão automática do FortiClient para a hora do ponto.</p>
+                    </div>
+                    <button onclick="switchTab('vpn')" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium transition shrink-0 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gears"></i> Configurar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: HISTORY & BANK OF HOURS -->
+        <section id="view-history" class="hidden space-y-6">
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Histórico de Pontos e Banco de Horas</h2>
+                        <p class="text-xs text-slate-400">Acompanhe os saldos acumulados de trabalho diário</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 text-xs">
+                            Total Banco: <strong id="total-bank-balance" class="text-emerald-400 text-sm ml-1">+00:00</strong>
+                        </div>
+                        <button onclick="exportHistoryCSV()" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3 rounded-l-xl">Data</th>
+                                <th class="p-3">Entrada 1</th>
+                                <th class="p-3">Saída 1</th>
+                                <th class="p-3">Entrada 2</th>
+                                <th class="p-3">Saída 2</th>
+                                <th class="p-3">Total Trabalhado</th>
+                                <th class="p-3">Saldo (Meta 8h10m)</th>
+                                <th class="p-3 rounded-r-xl text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-700/50 text-slate-200">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="history-empty-msg" class="text-center py-8 text-slate-500 text-xs">
+                    Nenhum registro salvo ainda. Preencha seus horários na aba "Hoje" e clique em Salvar.
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: VPN AUTOMATION SCRIPT GENERATOR -->
+        <section id="view-vpn" class="hidden space-y-6">
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="max-w-3xl">
+                    <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-brand-400"></i> Gerador de Comando para o Script Python
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6">
+                        Com base na sua entrada de hoje, calculamos o tempo exato em horas decimais para você rodar o comando no Windows e agendar a desconexão automática do FortiClient VPN.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2">
+                            <span class="text-xs text-slate-400 font-medium">Tempo restante de trabalho até bater 8h 10m:</span>
+                            <div id="vpn-calculated-hours" class="text-xl font-bold text-brand-400">0.00 Horas</div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-xs font-medium text-slate-300">Comando para rodar no Terminal / Prompt:</label>
+                            <div class="relative">
+                                <pre id="cmd-output" class="bg-slate-950 p-4 rounded-xl text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800">python disconnect_vpn.py --hours 8.16</pre>
+                                <button onclick="copyCmd()" class="absolute right-3 top-3 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition">
+                                    <i class="fa-solid fa-copy mr-1"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs leading-relaxed space-y-1">
+                            <p class="font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Dica de Automação Comercial:</p>
+                            <p class="text-amber-300/80">No produto final (App/Extensão), essa desconexão é feita automaticamente em segundo plano via chamada de sistema ou controle de socket, sem precisar digitar comandos no CMD!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: PRODUCT ROADMAP & SAAS ARCHITECTURE -->
+        <section id="view-roadmap" class="hidden space-y-6">
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                        Estratégia de Negócio & Arquitetura
+                    </span>
+                    <h2 class="text-xl font-bold text-white mt-2">Como transformar essa ideia em um App Comercial (SaaS)</h2>
+                    <p class="text-xs text-slate-400">Roadmap passo a passo para evoluir de um script pessoal para um produto lucrativo.</p>
+                </div>
+
+                <!-- Steps Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Step 1 -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-700/60 space-y-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">Fase 1</div>
+                        <h3 class="font-bold text-white text-sm">Extensão para Navegador (Chrome / Edge)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Criar uma extensão de navegador que lê automaticamente os horários diretamente da tela do ponto da empresa (via Content Script DOM parser).
+                        </p>
+                        <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                            <li>Zero digitação manual</li>
+                            <li>Notificação de saída no desktop</li>
+                            <li>Compatível com Totvs, Ahgora, Senior, Tangerino, etc.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-700/60 space-y-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">Fase 2</div>
+                        <h3 class="font-bold text-white text-sm">Agente Desktop (Tauri / Electron)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Um pequeno aplicativo na bandeja do sistema (System Tray) no Windows/Mac.
+                        </p>
+                        <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                            <li>Desconecta VPN automaticamente (FortiClient, Cisco, WireGuard)</li>
+                            <li>Fecha sistemas de trabalho no horário exato</li>
+                            <li>Bloqueia notificações corporativas (Slack/Teams) fora do expediente</li>
+                        </ul>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-700/60 space-y-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">Fase 3</div>
+                        <h3 class="font-bold text-white text-sm">Monetização & SaaS B2C</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Assinatura individual (ex: R$ 9,90/mês) para profissionais remotos e híbridos que prezam pelo direito à desconexão.
+                        </p>
+                        <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                            <li>Relatórios de banco de horas em PDF</li>
+                            <li>Sincronização em nuvem entre celular e PC</li>
+                            <li>Dashboard de saúde mental e limite de Overtime</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-700">
+                    <h4 class="text-xs font-bold text-slate-200 mb-1">Diferencial de Mercado:</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        A maioria dos softwares de ponto foca no empregador. Seu app foca na <strong>saúde do trabalhador (Employee-first)</strong>, garantindo que ele não trabalhe de graça nem tenha problemas com horas extras não autorizadas.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        let historyData = JSON.parse(localStorage.getItem('ponto_history') || '[]');
+        let timerInterval = null;
+
+        // Initialize App
+        window.onload = function() {
+            // Set default entry 1 to 08:00 if empty
+            if(!document.getElementById('t-entry1').value) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const savedToday = historyData.find(h => h.date === todayStr);
+                if(savedToday) {
+                    document.getElementById('t-entry1').value = savedToday.e1 || '';
+                    document.getElementById('t-exit1').value = savedToday.s1 || '';
+                    document.getElementById('t-entry2').value = savedToday.e2 || '';
+                    document.getElementById('t-exit2').value = savedToday.s2 || '';
+                } else {
+                    document.getElementById('t-entry1').value = '08:00';
+                    document.getElementById('t-exit1').value = '12:00';
+                    document.getElementById('t-entry2').value = '13:00';
+                }
+            }
+            calculateTime();
+            renderHistoryTable();
+            startLiveTimer();
+        };
+
+        function switchTab(tab) {
+            const views = ['today', 'history', 'vpn', 'roadmap'];
+            views.forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                
+                // Desktop tabs
+                const dtTab = document.getElementById(`tab-${v}`);
+                if(dtTab) {
+                    dtTab.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white";
+                }
+                // Mobile tabs
+                const mobTab = document.getElementById(`mob-tab-${v}`);
+                if(mobTab) {
+                    mobTab.className = "flex flex-col items-center py-1 text-slate-400";
+                }
+            });
+
+            // Activate chosen
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            const activeDt = document.getElementById(`tab-${tab}`);
+            if(activeDt) {
+                activeDt.className = "px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-white bg-brand-600 shadow";
+            }
+            const activeMob = document.getElementById(`mob-tab-${tab}`);
+            if(activeMob) {
+                activeMob.className = "flex flex-col items-center py-1 text-brand-500 font-medium";
+            }
+        }
+
+        function parseMinutes(timeStr) {
+            if (!timeStr) return null;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function formatMinutesToHM(minutes) {
+            const h = Math.floor(Math.abs(minutes) / 60);
+            const m = Math.abs(minutes) % 60;
+            const sign = minutes < 0 ? '-' : '';
+            return `${sign}${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+        }
+
+        function formatMinutesToTime(minutes) {
+            let m = ((minutes % 1440) + 1440) % 1440;
+            const h = Math.floor(m / 60);
+            const mins = m % 60;
+            return `${String(h).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+
+        function calculateTime() {
+            const e1 = parseMinutes(document.getElementById('t-entry1').value);
+            const s1 = parseMinutes(document.getElementById('t-exit1').value);
+            const e2 = parseMinutes(document.getElementById('t-entry2').value);
+            let s2 = parseMinutes(document.getElementById('t-exit2').value);
+
+            const targetStr = document.getElementById('target-work-hours').value || '08:10';
+            const targetMins = parseMinutes(targetStr) || (8 * 60 + 10);
+
+            let workedMins = 0;
+            let targetExitMin = null;
+
+            // Shift 1 worked time
+            if (e1 !== null && s1 !== null && s1 > e1) {
+                workedMins += (s1 - e1);
+            }
+
+            // Calculating target Exit 2
+            if (e1 !== null && s1 !== null && e2 !== null) {
+                const shift1Worked = Math.max(0, s1 - e1);
+                const shift2Needed = targetMins - shift1Worked;
+                targetExitMin = e2 + shift2Needed;
+                
+                document.getElementById('target-exit-display').innerText = formatMinutesToTime(targetExitMin);
+            } else {
+                document.getElementById('target-exit-display').innerText = '--:--';
+            }
+
+            // Real-time current status check
+            const now = new Date();
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+
+            if (s2 !== null && e2 !== null) {
+                // User filled all 4 points
+                workedMins += Math.max(0, s2 - e2);
+            } else if (e2 !== null && currentMin > e2) {
+                // Currently working afternoon shift
+                workedMins += (currentMin - e2);
+            } else if (e1 !== null && s1 === null && currentMin > e1) {
+                // Currently working morning shift
+                workedMins += (currentMin - e1);
+            }
+
+            // Balance calculation
+            const balanceMins = workedMins - targetMins;
+            const balanceElem = document.getElementById('hours-balance');
+            balanceElem.innerText = formatMinutesToHM(balanceMins);
+            if (balanceMins >= 0) {
+                balanceElem.className = "font-bold text-emerald-400";
+            } else {
+                balanceElem.className = "font-bold text-rose-400";
+            }
+
+            // Update UI elements
+            document.getElementById('worked-time-text').innerText = formatMinutesToHM(workedMins);
+            
+            const remainingMins = Math.max(0, targetMins - workedMins);
+            document.getElementById('remaining-time-text').innerText = formatMinutesToHM(remainingMins);
+
+            const progressPct = Math.min(100, Math.round((workedMins / targetMins) * 100));
+            document.getElementById('progress-bar').style.width = `${progressPct}%`;
+
+            // Badge status
+            const badge = document.getElementById('badge-status');
+            if (s2 !== null) {
+                badge.innerText = "Jornada Concluída";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+            } else if (e2 !== null) {
+                badge.innerText = "Trabalhando (Tarde)";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+            } else if (s1 !== null) {
+                badge.innerText = "Horário de Almoço";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30";
+            } else if (e1 !== null) {
+                badge.innerText = "Trabalhando (Manhã)";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30";
+            } else {
+                badge.innerText = "Aguardando Início";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-medium bg-slate-700 text-slate-300";
+            }
+
+            // Update VPN disconnect suggestion
+            const hoursDec = (remainingMins / 60).toFixed(2);
+            document.getElementById('vpn-calculated-hours').innerText = `${hoursDec} Horas (${remainingMins} minutos)`;
+            document.getElementById('cmd-output').innerText = `python disconnect_vpn.py --hours ${hoursDec}`;
+        }
+
+        function startLiveTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                calculateTime();
+
+                const e1 = parseMinutes(document.getElementById('t-entry1').value);
+                const s1 = parseMinutes(document.getElementById('t-exit1').value);
+                const e2 = parseMinutes(document.getElementById('t-entry2').value);
+                const s2 = parseMinutes(document.getElementById('t-exit2').value);
+
+                if (s2 !== null) {
+                    document.getElementById('countdown-text').innerText = "00:00:00";
+                    document.getElementById('countdown-subtext').innerText = "Você já encerrou a jornada de hoje!";
+                    return;
+                }
+
+                if (e1 !== null && s1 !== null && e2 !== null) {
+                    const targetStr = document.getElementById('target-work-hours').value || '08:10';
+                    const targetMins = parseMinutes(targetStr) || (8 * 60 + 10);
+                    const shift1Worked = Math.max(0, s1 - e1);
+                    const targetExitMin = e2 + (targetMins - shift1Worked);
+
+                    const now = new Date();
+                    const currentSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+                    const targetSecs = targetExitMin * 60;
+
+                    const diffSecs = targetSecs - currentSecs;
+
+                    if (diffSecs <= 0) {
+                        document.getElementById('countdown-text').innerText = "00:00:00";
+                        document.getElementById('countdown-subtext').innerText = "Meta de 8h 10m atingida! Hora de sair.";
+                        checkAndSendNotification();
+                    } else {
+                        const h = Math.floor(diffSecs / 3600);
+                        const m = Math.floor((diffSecs % 3600) / 60);
+                        const s = diffSecs % 60;
+                        document.getElementById('countdown-text').innerText = 
+                            `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                        document.getElementById('countdown-subtext').innerText = "Contando até atingir a meta diária.";
+                    }
+                } else {
+                    document.getElementById('countdown-text').innerText = "--:--:--";
+                    document.getElementById('countdown-subtext').innerText = "Preencha os horários de entrada e almoço.";
+                }
+            }, 1000);
+        }
+
+        function fillCurrentTime(inputId) {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            document.getElementById(inputId).value = timeStr;
+            calculateTime();
+            showToast("Horário atual registrado!");
+        }
+
+        function clearTodayInputs() {
+            document.getElementById('t-entry1').value = '';
+            document.getElementById('t-exit1').value = '';
+            document.getElementById('t-entry2').value = '';
+            document.getElementById('t-exit2').value = '';
+            calculateTime();
+            showToast("Campos limpos com sucesso.");
+        }
+
+        function saveTodayToHistory() {
+            const dateStr = new Date().toISOString().split('T')[0];
+            const e1 = document.getElementById('t-entry1').value;
+            const s1 = document.getElementById('t-exit1').value;
+            const e2 = document.getElementById('t-entry2').value;
+            const s2 = document.getElementById('t-exit2').value || document.getElementById('target-exit-display').innerText;
+
+            const targetStr = document.getElementById('target-work-hours').value || '08:10';
+            const targetMins = parseMinutes(targetStr);
+
+            const e1m = parseMinutes(e1);
+            const s1m = parseMinutes(s1);
+            const e2m = parseMinutes(e2);
+            const s2m = parseMinutes(s2);
+
+            let worked = 0;
+            if(e1m !== null && s1m !== null) worked += (s1m - e1m);
+            if(e2m !== null && s2m !== null) worked += (s2m - e2m);
+
+            const balance = worked - targetMins;
+
+            const existingIndex = historyData.findIndex(h => h.date === dateStr);
+            const item = { date: dateStr, e1, s1, e2, s2, worked, balance };
+
+            if (existingIndex >= 0) {
+                historyData[existingIndex] = item;
+            } else {
+                historyData.unshift(item);
+            }
+
+            localStorage.setItem('ponto_history', JSON.stringify(historyData));
+            renderHistoryTable();
+            showToast("Registro do dia salvo no histórico!");
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('history-table-body');
+            const emptyMsg = document.getElementById('history-empty-msg');
+            tbody.innerHTML = '';
+
+            if (historyData.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                document.getElementById('total-bank-balance').innerText = "+00:00";
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+
+            let totalBank = 0;
+
+            historyData.forEach((item, idx) => {
+                totalBank += item.balance;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800";
+
+                const balStr = formatMinutesToHM(item.balance);
+                const balClass = item.balance >= 0 ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold";
+
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-white">${item.date}</td>
+                    <td class="p-3">${item.e1 || '--'}</td>
+                    <td class="p-3">${item.s1 || '--'}</td>
+                    <td class="p-3">${item.e2 || '--'}</td>
+                    <td class="p-3">${item.s2 || '--'}</td>
+                    <td class="p-3">${formatMinutesToHM(item.worked)}</td>
+                    <td class="p-3 ${balClass}">${balStr}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteHistoryItem(${idx})" class="text-rose-400 hover:text-rose-300 p-1" title="Excluir">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const totalClass = totalBank >= 0 ? "text-emerald-400" : "text-rose-400";
+            document.getElementById('total-bank-balance').className = `${totalClass} text-sm ml-1 font-bold`;
+            document.getElementById('total-bank-balance').innerText = formatMinutesToHM(totalBank);
+        }
+
+        function deleteHistoryItem(idx) {
+            historyData.splice(idx, 1);
+            localStorage.setItem('ponto_history', JSON.stringify(historyData));
+            renderHistoryTable();
+            showToast("Item excluído.");
+        }
+
+        function exportHistoryCSV() {
+            if (historyData.length === 0) {
+                showToast("Sem histórico para exportar.");
+                return;
+            }
+            let csv = "Data,Entrada1,Saida1,Entrada2,Saida2,Trabalhado_Minutos,Saldo_Minutos\n";
+            historyData.forEach(h => {
+                csv += `${h.date},${h.e1},${h.s1},${h.e2},${h.s2},${h.worked},${h.balance}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `historico_ponto_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            showToast("Arquivo CSV baixado!");
+        }
+
+        let notifiedToday = false;
+
+        function toggleNotifications() {
+            if (!("Notification" in window)) {
+                showToast("Este navegador não suporta notificações de área de trabalho.");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    showToast("Notificações ativadas com sucesso!");
+                    new Notification("Ponto Certo", { body: "Você será notificado quando atingir as 8h 10m de trabalho!" });
+                } else {
+                    showToast("Permissão de notificação negada.");
+                }
+            });
+        }
+
+        function checkAndSendNotification() {
+            if (notifiedToday) return;
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("Ponto Certo - Hora de Sair!", {
+                    body: "Você completou 8h e 10m de trabalho hoje! Lembre-se de bater o ponto e desconectar a VPN.",
+                    icon: "https://cdn-icons-png.flaticon.com/512/2838/2838779.png"
+                });
+                notifiedToday = true;
+            }
+        }
+
+        function copyCmd() {
+            const text = document.getElementById('cmd-output').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("Comando copiado para a área de transferência!");
+            });
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-800 border border-slate-700 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto";
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-brand-400"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
