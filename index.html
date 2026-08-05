@@ -41,12 +41,12 @@
     <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                <div onclick="handleLogoClick()" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20 cursor-pointer select-none" title="Clique 3x para abrir Modo Criador">
                     <i class="fa-solid fa-clock-rotate-left text-white text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Ponto Certo</h1>
-                    <p class="text-xs text-slate-400">Gestor Inteligente de Jornada & VPN</p>
+                    <h1 onclick="handleLogoClick()" class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent cursor-pointer select-none">Ponto Certo</h1>
+                    <p class="text-xs text-slate-400">Gestor Inteligente de Jornada</p>
                 </div>
             </div>
 
@@ -58,16 +58,20 @@
                     <button onclick="switchTab('history')" id="tab-history" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
                         <i class="fa-solid fa-calendar-days mr-1.5"></i> Histórico
                     </button>
-                    <button onclick="switchTab('vpn')" id="tab-vpn" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <button onclick="switchTab('vpn')" id="tab-vpn" class="dev-only hidden px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
                         <i class="fa-solid fa-shield-halved mr-1.5"></i> Automação VPN
                     </button>
-                    <button onclick="switchTab('roadmap')" id="tab-roadmap" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                    <button onclick="switchTab('roadmap')" id="tab-roadmap" class="dev-only hidden px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
                         <i class="fa-solid fa-rocket mr-1.5"></i> Visão de Produto (SaaS)
                     </button>
                 </nav>
 
                 <button onclick="toggleNotifications()" id="btn-notify" class="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-yellow-400 transition" title="Ativar Notificações">
                     <i class="fa-solid fa-bell"></i>
+                </button>
+
+                <button onclick="toggleDevMode()" id="btn-dev-toggle" class="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-brand-400 transition" title="Ativar Modo Criador (Ver VPN / SaaS)">
+                    <i id="dev-lock-icon" class="fa-solid fa-lock text-xs"></i>
                 </button>
             </div>
         </div>
@@ -80,10 +84,10 @@
             <button onclick="switchTab('history')" id="mob-tab-history" class="flex flex-col items-center py-1 text-slate-400">
                 <i class="fa-solid fa-calendar-days text-base mb-1"></i> Histórico
             </button>
-            <button onclick="switchTab('vpn')" id="mob-tab-vpn" class="flex flex-col items-center py-1 text-slate-400">
+            <button onclick="switchTab('vpn')" id="mob-tab-vpn" class="dev-only hidden flex flex-col items-center py-1 text-slate-400">
                 <i class="fa-solid fa-shield-halved text-base mb-1"></i> VPN
             </button>
-            <button onclick="switchTab('roadmap')" id="mob-tab-roadmap" class="flex flex-col items-center py-1 text-slate-400">
+            <button onclick="switchTab('roadmap')" id="mob-tab-roadmap" class="dev-only hidden flex flex-col items-center py-1 text-slate-400">
                 <i class="fa-solid fa-rocket text-base mb-1"></i> SaaS
             </button>
         </div>
@@ -225,7 +229,7 @@
                 </div>
 
                 <!-- Quick VPN Timer Link -->
-                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex items-center justify-between">
+                <div id="card-vpn-link" class="dev-only hidden bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex items-center justify-between">
                     <div class="space-y-1">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">
                             Integração VPN
@@ -393,6 +397,8 @@
     <script>
         let historyData = JSON.parse(localStorage.getItem('ponto_history') || '[]');
         let timerInterval = null;
+        let isDevMode = localStorage.getItem('ponto_dev_mode') === 'true';
+        let logoClickCount = 0;
 
         // Initialize App
         window.onload = function() {
@@ -411,10 +417,64 @@
                     document.getElementById('t-entry2').value = '13:00';
                 }
             }
+            applyDevModeUI();
             calculateTime();
             renderHistoryTable();
             startLiveTimer();
         };
+
+        function toggleDevMode() {
+            if (!isDevMode) {
+                const pin = prompt("Digite a senha do Criador para revelar as abas estratégicas (Padrão: 1234):");
+                if (pin === "1234" || pin === "") {
+                    isDevMode = true;
+                    localStorage.setItem('ponto_dev_mode', 'true');
+                    showToast("Modo Criador ATIVADO! As abas VPN e SaaS estão visíveis.");
+                } else if (pin !== null) {
+                    showToast("Senha incorreta.");
+                }
+            } else {
+                isDevMode = false;
+                localStorage.setItem('ponto_dev_mode', 'false');
+                showToast("Modo Criador DESATIVADO. Exibição pública ativa.");
+                switchTab('today');
+            }
+            applyDevModeUI();
+        }
+
+        function handleLogoClick() {
+            logoClickCount++;
+            if (logoClickCount >= 3) {
+                logoClickCount = 0;
+                toggleDevMode();
+            } else {
+                setTimeout(() => { logoClickCount = 0; }, 1500);
+            }
+        }
+
+        function applyDevModeUI() {
+            const devElements = document.querySelectorAll('.dev-only');
+            const lockIcon = document.getElementById('dev-lock-icon');
+            const lockBtn = document.getElementById('btn-dev-toggle');
+
+            devElements.forEach(el => {
+                if (isDevMode) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+
+            if (lockIcon && lockBtn) {
+                if (isDevMode) {
+                    lockIcon.className = "fa-solid fa-lock-open text-xs text-brand-400";
+                    lockBtn.title = "Modo Criador Ativo (Clique para ocultar abas)";
+                } else {
+                    lockIcon.className = "fa-solid fa-lock text-xs text-slate-400";
+                    lockBtn.title = "Ativar Modo Criador (Ver abas VPN/SaaS)";
+                }
+            }
+        }
 
         function switchTab(tab) {
             const views = ['today', 'history', 'vpn', 'roadmap'];
