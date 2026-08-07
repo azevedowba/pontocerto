@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponto Certo Popup</title>
+    <link rel="stylesheet" href="../../shared/css/style.css">
+    <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="popup-shell">
+        <header class="popup-header">
+            <h1>Ponto Certo Popup</h1>
+            <p>Registre e acompanhe seus horários diretamente na extensão.</p>
+        </header>
+
+        <section class="popup-card">
+            <div class="card-header">
+                <div>
+                    <h2>Batidas de Ponto</h2>
+                    <p>Preencha seus horários para visualizar o saldo e salvar no histórico.</p>
+                </div>
+                <div class="field-pill">
+                    <span>Meta</span>
+                    <input type="text" id="target-work-hours" value="08:10" class="input-small">
+                </div>
+            </div>
+
+            <div class="field-grid">
+                <div class="field-group">
+                    <label><i class="fa-solid fa-sun icon-yellow"></i> Entrada Manhã</label>
+                    <input type="time" id="t-entry1" class="input-field">
+                </div>
+                <div class="field-group">
+                    <label><i class="fa-solid fa-utensils icon-orange"></i> Saída Almoço</label>
+                    <input type="time" id="t-exit1" class="input-field">
+                </div>
+                <div class="field-group">
+                    <label><i class="fa-solid fa-briefcase icon-blue"></i> Volta Almoço</label>
+                    <input type="time" id="t-entry2" class="input-field">
+                </div>
+                <div class="field-group">
+                    <label><i class="fa-solid fa-house icon-green"></i> Saída Tarde</label>
+                    <input type="time" id="t-exit2" placeholder="Automático" class="input-field input-accent">
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button id="btn-entry1" type="button" class="btn-secondary"><i class="fa-solid fa-play"></i>Entrada</button>
+                <button id="btn-exit1" type="button" class="btn-secondary"><i class="fa-solid fa-utensils"></i>Almoço</button>
+                <button id="btn-entry2" type="button" class="btn-secondary"><i class="fa-solid fa-rotate-left"></i>Volta</button>
+            </div>
+
+            <div class="action-row">
+                <div class="summary-row">Saldo do dia: <strong id="hours-balance">00:00</strong></div>
+                <div class="button-group">
+                    <button id="btn-save" type="button" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>
+                    <button id="btn-export" type="button" class="btn-secondary"><i class="fa-solid fa-download"></i>Exportar</button>
+                    <button id="btn-clear" type="button" class="btn-danger"><i class="fa-solid fa-trash-can"></i>Limpar</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="popup-card">
+            <div class="card-header">
+                <h2>Histórico de Pontos</h2>
+                <span id="history-count">0 registro(s)</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Entrada 1</th>
+                            <th>Saída 1</th>
+                            <th>Entrada 2</th>
+                            <th>Saída 2</th>
+                            <th>Total</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Populado dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="history-empty-msg" class="empty-msg">Nenhum registro salvo ainda. Salve um ponto para preencher o histórico.</div>
+        </section>
+
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script type="module" src="app_logic.js"></script>
+</body>
+</html>
