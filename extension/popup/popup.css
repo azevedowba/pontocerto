@@ -27,39 +27,35 @@ body {
 body {
   width: 380px;
   box-sizing: border-box;
+  padding: 12px;
 }
 
 .popup-shell {
   width: 100%;
-  padding: 16px;
+  padding: 0;
   box-sizing: border-box;
 }
 
 .popup-header {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px 0;
 }
 
 .popup-header h1 {
   margin: 0;
-  font-size: 1.15rem;
-}
-
-.popup-header p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .popup-card {
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 22px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 8px;
   box-shadow: var(--shadow);
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .card-header {
@@ -111,39 +107,34 @@ body {
 
 .field-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-@media (min-width: 360px) {
-  .field-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field-group label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--muted);
 }
 
 .input-field {
   width: 100%;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  padding: 11px 12px;
-  font-size: 0.95rem;
+  padding: 6px 8px;
+  font-size: 0.88rem;
+  height: 34px;
 }
 
 .input-field:focus {
@@ -175,8 +166,8 @@ body {
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 @media (max-width: 340px) {
@@ -207,7 +198,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 8px 10px;
 }
 
 .btn-primary {
@@ -233,7 +224,7 @@ button {
 
 .summary-row {
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
 }
 
 .summary-row strong {
@@ -242,23 +233,22 @@ button {
 
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 18px;
-  margin-top: 8px;
+  border-radius: 12px;
+  margin-top: 6px;
 }
 
 .history-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 560px;
+  min-width: 100%;
 }
 
 .history-table th,
 .history-table td {
-  padding: 10px 8px;
+  padding: 8px 6px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.08);
   text-align: left;
-  font-size: 0.78rem;
-  white-space: nowrap;
+  font-size: 0.75rem;
 }
 
 .history-table thead {

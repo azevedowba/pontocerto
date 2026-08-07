@@ -95,20 +95,20 @@ export function exportHistoryCSV(filenamePrefix = 'historico_ponto') {
 }
 
 const ids = {
-  targetWorkHours: 'target-work-hours',
-  entry1: 't-entry1',
-  exit1: 't-exit1',
-  entry2: 't-entry2',
-  exit2: 't-exit2',
+  targetWorkHours: 'input-target-work-hours',
+  entry1: 'input-entrada-manha',
+  exit1: 'input-saida-almoco',
+  entry2: 'input-volta-almoco',
+  exit2: 'input-saida-tarde',
   historyCount: 'history-count',
   historyTableBody: 'history-table-body',
   historyEmptyMsg: 'history-empty-msg',
-  btnEntry1: 'btn-entry1',
-  btnExit1: 'btn-exit1',
-  btnEntry2: 'btn-entry2',
-  btnSave: 'btn-save',
+  btnEntry1: 'btn-entrada',
+  btnExit1: 'btn-almoco',
+  btnEntry2: 'btn-volta',
+  btnSave: 'btn-salvar',
   btnExport: 'btn-export',
-  btnClear: 'btn-clear'
+  btnClear: 'btn-limpar'
 };
 
 const el = (id) => document.getElementById(id);
@@ -211,7 +211,7 @@ function renderHistoryTable() {
 }
 
 function handleHistoryDelete(index) {
-  const removed = removeHistoryItem(index);
+  const removed = deleteHistoryItem(index);
   if (removed) {
     renderHistoryTable();
     showToast('Item excluído.');

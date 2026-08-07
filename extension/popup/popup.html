@@ -11,8 +11,7 @@
 <body>
     <div class="popup-shell">
         <header class="popup-header">
-            <h1>Ponto Certo Popup</h1>
-            <p>Registre e acompanhe seus horários diretamente na extensão.</p>
+            <h1>Ponto Certo</h1>
         </header>
 
         <section class="popup-card">
@@ -23,41 +22,41 @@
                 </div>
                 <div class="field-pill">
                     <span>Meta</span>
-                    <input type="text" id="target-work-hours" value="08:10" class="input-small">
+                    <input type="text" id="input-target-work-hours" value="08:10" class="input-small">
                 </div>
             </div>
 
             <div class="field-grid">
                 <div class="field-group">
                     <label><i class="fa-solid fa-sun icon-yellow"></i> Entrada Manhã</label>
-                    <input type="time" id="t-entry1" class="input-field">
+                    <input type="time" id="input-entrada-manha" class="input-field">
                 </div>
                 <div class="field-group">
                     <label><i class="fa-solid fa-utensils icon-orange"></i> Saída Almoço</label>
-                    <input type="time" id="t-exit1" class="input-field">
+                    <input type="time" id="input-saida-almoco" class="input-field">
                 </div>
                 <div class="field-group">
                     <label><i class="fa-solid fa-briefcase icon-blue"></i> Volta Almoço</label>
-                    <input type="time" id="t-entry2" class="input-field">
+                    <input type="time" id="input-volta-almoco" class="input-field">
                 </div>
                 <div class="field-group">
                     <label><i class="fa-solid fa-house icon-green"></i> Saída Tarde</label>
-                    <input type="time" id="t-exit2" placeholder="Automático" class="input-field input-accent">
+                    <input type="time" id="input-saida-tarde" placeholder="Automático" class="input-field input-accent">
                 </div>
             </div>
 
             <div class="quick-actions">
-                <button id="btn-entry1" type="button" class="btn-secondary"><i class="fa-solid fa-play"></i>Entrada</button>
-                <button id="btn-exit1" type="button" class="btn-secondary"><i class="fa-solid fa-utensils"></i>Almoço</button>
-                <button id="btn-entry2" type="button" class="btn-secondary"><i class="fa-solid fa-rotate-left"></i>Volta</button>
+                <button id="btn-entrada" type="button" class="btn-secondary"><i class="fa-solid fa-play"></i>Entrada</button>
+                <button id="btn-almoco" type="button" class="btn-secondary"><i class="fa-solid fa-utensils"></i>Almoço</button>
+                <button id="btn-volta" type="button" class="btn-secondary"><i class="fa-solid fa-rotate-left"></i>Volta</button>
             </div>
 
             <div class="action-row">
                 <div class="summary-row">Saldo do dia: <strong id="hours-balance">00:00</strong></div>
                 <div class="button-group">
-                    <button id="btn-save" type="button" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>
+                    <button id="btn-salvar" type="button" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>
                     <button id="btn-export" type="button" class="btn-secondary"><i class="fa-solid fa-download"></i>Exportar</button>
-                    <button id="btn-clear" type="button" class="btn-danger"><i class="fa-solid fa-trash-can"></i>Limpar</button>
+                    <button id="btn-limpar" type="button" class="btn-danger"><i class="fa-solid fa-trash-can"></i>Limpar</button>
                 </div>
             </div>
         </section>
