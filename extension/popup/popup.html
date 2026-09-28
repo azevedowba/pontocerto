@@ -1,96 +1,95 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ponto Certo Popup</title>
-    <link rel="stylesheet" href="../../shared/css/style.css">
-    <link rel="stylesheet" href="popup.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ponto Certo Popup</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="popup-shell">
-        <header class="popup-header">
-            <h1>Ponto Certo</h1>
-        </header>
-
-        <section class="popup-card">
-            <div class="card-header">
-                <div>
-                    <h2>Batidas de Ponto</h2>
-                    <p>Preencha seus horários para visualizar o saldo e salvar no histórico.</p>
-                </div>
-                <div class="field-pill">
-                    <span>Meta</span>
-                    <input type="text" id="input-target-work-hours" value="08:10" class="input-small">
-                </div>
-            </div>
-
-            <div class="field-grid">
-                <div class="field-group">
-                    <label><i class="fa-solid fa-sun icon-yellow"></i> Entrada Manhã</label>
-                    <input type="time" id="input-entrada-manha" class="input-field">
-                </div>
-                <div class="field-group">
-                    <label><i class="fa-solid fa-utensils icon-orange"></i> Saída Almoço</label>
-                    <input type="time" id="input-saida-almoco" class="input-field">
-                </div>
-                <div class="field-group">
-                    <label><i class="fa-solid fa-briefcase icon-blue"></i> Volta Almoço</label>
-                    <input type="time" id="input-volta-almoco" class="input-field">
-                </div>
-                <div class="field-group">
-                    <label><i class="fa-solid fa-house icon-green"></i> Saída Tarde</label>
-                    <input type="time" id="input-saida-tarde" placeholder="Automático" class="input-field input-accent">
-                </div>
-            </div>
-
-            <div class="quick-actions">
-                <button id="btn-entrada" type="button" class="btn-secondary"><i class="fa-solid fa-play"></i>Entrada</button>
-                <button id="btn-almoco" type="button" class="btn-secondary"><i class="fa-solid fa-utensils"></i>Almoço</button>
-                <button id="btn-volta" type="button" class="btn-secondary"><i class="fa-solid fa-rotate-left"></i>Volta</button>
-            </div>
-
-            <div class="action-row">
-                <div class="summary-row">Saldo do dia: <strong id="hours-balance">00:00</strong></div>
-                <div class="button-group">
-                    <button id="btn-salvar" type="button" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i>Salvar</button>
-                    <button id="btn-export" type="button" class="btn-secondary"><i class="fa-solid fa-download"></i>Exportar</button>
-                    <button id="btn-limpar" type="button" class="btn-danger"><i class="fa-solid fa-trash-can"></i>Limpar</button>
-                </div>
-            </div>
-        </section>
-
-        <section class="popup-card">
-            <div class="card-header">
-                <h2>Histórico de Pontos</h2>
-                <span id="history-count">0 registro(s)</span>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Entrada 1</th>
-                            <th>Saída 1</th>
-                            <th>Entrada 2</th>
-                            <th>Saída 2</th>
-                            <th>Total</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body">
-                        <!-- Populado dinamicamente -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="history-empty-msg" class="empty-msg">Nenhum registro salvo ainda. Salve um ponto para preencher o histórico.</div>
-        </section>
-
-        <div id="toast-container" class="toast-container"></div>
+  <div class="popup-shell">
+    <div class="window-bar" aria-hidden="true">
+      <span class="window-dot dot-red"></span><span class="window-dot dot-amber"></span><span class="window-dot dot-green"></span>
+      <span class="window-caption">PONTO CERTO</span>
+      <span class="window-mark">PC<span class="mark-dot">.</span></span>
     </div>
 
-    <script type="module" src="app_logic.js"></script>
+    <div class="popup-content">
+      <header class="popup-header">
+        <div>
+          <span class="eyebrow">SEU DIA, NO CONTROLE</span>
+          <h1>Ponto Certo<span class="heading-period">.</span></h1>
+        </div>
+        <span class="header-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+      </header>
+
+      <section class="popup-card" aria-labelledby="punch-title">
+        <div class="card-header">
+          <div>
+            <h2 id="punch-title">Batidas de ponto</h2>
+            <p>Registre os horários do seu dia.</p>
+          </div>
+          <label class="field-pill" for="input-target-work-hours">
+            <span>Meta diária</span>
+            <input type="text" id="input-target-work-hours" value="08:10" class="input-small" inputmode="numeric" aria-label="Meta diária em horas e minutos">
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <div class="field-group">
+            <label for="input-entrada-manha"><span class="field-indicator indicator-amber"></span>Entrada manhã</label>
+            <input type="time" id="input-entrada-manha" class="input-field">
+          </div>
+          <div class="field-group">
+            <label for="input-saida-almoco"><span class="field-indicator indicator-coral"></span>Saída almoço</label>
+            <input type="time" id="input-saida-almoco" class="input-field">
+          </div>
+          <div class="field-group">
+            <label for="input-volta-almoco"><span class="field-indicator indicator-blue"></span>Volta almoço</label>
+            <input type="time" id="input-volta-almoco" class="input-field">
+          </div>
+          <div class="field-group">
+            <label for="input-saida-tarde"><span class="field-indicator indicator-green"></span>Saída tarde</label>
+            <input type="time" id="input-saida-tarde" placeholder="Automático" class="input-field input-accent">
+          </div>
+        </div>
+
+        <div class="quick-actions" aria-label="Registrar horário atual">
+          <button id="btn-entrada" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z"/></svg>Entrada</button>
+          <button id="btn-almoco" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v8M8 3v8M11 3v8M5 8h6M8 11v10M17 3v18M17 3c-3 2-4 5-4 9h4"/></svg>Almoço</button>
+          <button id="btn-volta" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 6.4M3 17v-6h6"/></svg>Volta</button>
+        </div>
+      </section>
+
+      <div class="action-row">
+        <div class="summary-row"><span>SALDO DO DIA</span><strong id="hours-balance">00:00</strong><span class="balance-caption">Horas registradas hoje</span></div>
+        <div class="button-group">
+          <button id="btn-salvar" type="button" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"/></svg>Salvar ponto</button>
+          <button id="btn-export" type="button" class="btn-secondary" title="Exportar histórico" aria-label="Exportar histórico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg></button>
+          <button id="btn-limpar" type="button" class="btn-danger" title="Limpar horários" aria-label="Limpar horários"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 14h10l1-14M10 11v6m4-6v6"/></svg></button>
+        </div>
+      </div>
+
+      <section class="history-section" aria-labelledby="history-title">
+        <div class="card-header history-header">
+          <h2 id="history-title">Histórico de pontos</h2>
+          <span id="history-count">0 registro(s)</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="history-table">
+            <thead><tr><th>Data</th><th>Entrada 1</th><th>Saída 1</th><th>Entrada 2</th><th>Saída 2</th><th>Total</th><th>Ação</th></tr></thead>
+            <tbody id="history-table-body"><!-- Populado dinamicamente --></tbody>
+          </table>
+        </div>
+        <div id="history-empty-msg" class="empty-msg">
+          <span class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15h8"/></svg></span>
+          <strong>Nenhum registro ainda</strong>
+          <span>Seus pontos salvos aparecem aqui.</span>
+        </div>
+      </section>
+    </div>
+    <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+  </div>
+  <script type="module" src="app_logic.js"></script>
 </body>
 </html>
