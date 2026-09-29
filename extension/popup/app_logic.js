@@ -1,4 +1,4 @@
-import { parseMinutes, formatMinutesToHM, calculateSummary } from '../../shared/js/time_core.js';
+import { parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary } from '../../shared/js/time_core.js';
 
 let historyData = [];
 
@@ -117,6 +117,63 @@ const getValue = (id) => {
   return element ? element.value : '';
 };
 
+const DEFAULT_LUNCH_DURATION_MINUTES = 60; // 1 hora de almoço
+const DEFAULT_MORNING_SHIFT_MINUTES = 4 * 60; // 4 horas de turno da manhã
+
+function updateInputSuggestions(entry1, exit1, entry2, targetMinutes) {
+  const entry1Input = el(ids.entry1);
+  const exit1Input = el(ids.exit1);
+  const entry2Input = el(ids.entry2);
+  const exit2Input = el(ids.exit2);
+
+  if (exit1Input) exit1Input.placeholder = 'Automático';
+  if (entry2Input) entry2Input.placeholder = 'Automático';
+  if (exit2Input) exit2Input.placeholder = 'Automático';
+
+  const e1m = parseMinutes(entry1);
+  const s1m = parseMinutes(exit1);
+  const e2m = parseMinutes(entry2);
+
+  if (e1m !== null && exit1Input && !exit1Input.value) {
+    exit1Input.placeholder = formatMinutesToTime(e1m + DEFAULT_MORNING_SHIFT_MINUTES);
+  }
+  if (s1m !== null && entry2Input && !entry2Input.value) {
+    entry2Input.placeholder = formatMinutesToTime(s1m + DEFAULT_LUNCH_DURATION_MINUTES);
+  }
+  if (e1m !== null && s1m !== null && e2m !== null && exit2Input && !exit2Input.value) {
+    const morningWorked = s1m - e1m;
+    const remainingWork = targetMinutes - morningWorked;
+    if (remainingWork > 0) {
+      exit2Input.placeholder = formatMinutesToTime(e2m + remainingWork);
+    } else {
+      exit2Input.placeholder = 'Meta atingida';
+    }
+  }
+}
+
+function updateComplianceUI(compliance) {
+  const box = el('compliance-box');
+  const statusEl = el('compliance-status');
+  const msgList = el('compliance-messages');
+  if (!box || !statusEl || !msgList) return;
+
+  msgList.innerHTML = '';
+
+  if (compliance.isConforme) {
+    box.className = 'compliance-box bg-emerald-950/40 border border-emerald-800 text-emerald-300';
+    statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> Dia Conforme com as Regras`;
+    box.classList.remove('hidden');
+  } else {
+    box.className = 'compliance-box bg-rose-950/40 border border-rose-800 text-rose-300';
+    statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Dia Não Conforme`;
+    compliance.messages.forEach(msg => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      msgList.appendChild(li);
+    });
+    box.classList.remove('hidden');
+  }
+}
 function calculateTime() {
   const entry1 = getValue(ids.entry1);
   const exit1 = getValue(ids.exit1);
@@ -132,6 +189,9 @@ function calculateTime() {
   const historyCountEl = el(ids.historyCount);
   if (balanceEl) balanceEl.innerText = formatMinutesToHM(summary.balanceMinutes);
   if (historyCountEl) historyCountEl.innerText = `${getHistoryData().length} registro(s)`;
+
+  updateComplianceUI(summary.compliance);
+  updateInputSuggestions(entry1, exit1, entry2, summary.targetMinutes);
 }
 
 function startLiveTimer() {
@@ -304,3 +364,4 @@ function initPopup() {
 }
 
 document.addEventListener('DOMContentLoaded', initPopup);
+

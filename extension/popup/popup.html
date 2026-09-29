@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ponto Certo Popup</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-shell">
+    <div class="aurora aurora-a" aria-hidden="true"></div>
+    <div class="aurora aurora-b" aria-hidden="true"></div>
+
     <div class="window-bar" aria-hidden="true">
       <span class="window-dot dot-red"></span><span class="window-dot dot-amber"></span><span class="window-dot dot-green"></span>
       <span class="window-caption">PONTO CERTO</span>
@@ -23,32 +27,32 @@
         <span class="header-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
       </header>
 
-      <section class="popup-card" aria-labelledby="punch-title">
+      <section class="glass-card popup-card" aria-labelledby="punch-title">
         <div class="card-header">
           <div>
             <h2 id="punch-title">Batidas de ponto</h2>
             <p>Registre os horários do seu dia.</p>
           </div>
           <label class="field-pill" for="input-target-work-hours">
-            <span>Meta diária</span>
+            <span>Meta</span>
             <input type="text" id="input-target-work-hours" value="08:10" class="input-small" inputmode="numeric" aria-label="Meta diária em horas e minutos">
           </label>
         </div>
 
         <div class="field-grid">
-          <div class="field-group">
+          <div class="field-group float-tile">
             <label for="input-entrada-manha"><span class="field-indicator indicator-amber"></span>Entrada manhã</label>
             <input type="time" id="input-entrada-manha" class="input-field">
           </div>
-          <div class="field-group">
+          <div class="field-group float-tile">
             <label for="input-saida-almoco"><span class="field-indicator indicator-coral"></span>Saída almoço</label>
             <input type="time" id="input-saida-almoco" class="input-field">
           </div>
-          <div class="field-group">
+          <div class="field-group float-tile">
             <label for="input-volta-almoco"><span class="field-indicator indicator-blue"></span>Volta almoço</label>
             <input type="time" id="input-volta-almoco" class="input-field">
           </div>
-          <div class="field-group">
+          <div class="field-group float-tile tile-accent">
             <label for="input-saida-tarde"><span class="field-indicator indicator-green"></span>Saída tarde</label>
             <input type="time" id="input-saida-tarde" placeholder="Automático" class="input-field input-accent">
           </div>
@@ -62,15 +66,24 @@
       </section>
 
       <div class="action-row">
-        <div class="summary-row"><span>SALDO DO DIA</span><strong id="hours-balance">00:00</strong><span class="balance-caption">Horas registradas hoje</span></div>
+        <div class="glass-card summary-row">
+          <span>SALDO DO DIA</span>
+          <strong id="hours-balance">00:00</strong>
+          <span class="balance-caption">Horas registradas hoje</span>
+        </div>
         <div class="button-group">
           <button id="btn-salvar" type="button" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13l3 3v13H4zM8 4v6h8V4M8 20v-7h8v7"/></svg>Salvar ponto</button>
-          <button id="btn-export" type="button" class="btn-secondary" title="Exportar histórico" aria-label="Exportar histórico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg></button>
-          <button id="btn-limpar" type="button" class="btn-danger" title="Limpar horários" aria-label="Limpar horários"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 14h10l1-14M10 11v6m4-6v6"/></svg></button>
+          <button id="btn-export" type="button" class="btn-secondary btn-icon" title="Exportar histórico" aria-label="Exportar histórico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg></button>
+          <button id="btn-limpar" type="button" class="btn-danger btn-icon" title="Limpar horários" aria-label="Limpar horários"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 14h10l1-14M10 11v6m4-6v6"/></svg></button>
         </div>
       </div>
 
-      <section class="history-section" aria-labelledby="history-title">
+      <div id="compliance-box" class="compliance-box hidden">
+        <div id="compliance-status"></div>
+        <ul id="compliance-messages"></ul>
+      </div>
+
+      <section class="glass-card history-section" aria-labelledby="history-title">
         <div class="card-header history-header">
           <h2 id="history-title">Histórico de pontos</h2>
           <span id="history-count">0 registro(s)</span>
