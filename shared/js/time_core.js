@@ -1,4 +1,5 @@
-const DEFAULT_TARGET_MINUTES = 8 * 60;
+// Meta padrão exibida pela web e pela extensão.
+const DEFAULT_TARGET_MINUTES = 8 * 60 + 10;
 
 // Constantes para Horários e Durações (em minutos)
 const MIN_ENTRY_FLEX_MINUTES = 7 * 60; // 07:00

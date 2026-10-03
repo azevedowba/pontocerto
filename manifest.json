@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Ponto Certo Extension",
+    "name": "Ponto Certo",
     "version": "1.0.0",
     "description": "Extensão para gerenciar horários de ponto e notificações de jornada.",
     "permissions": [

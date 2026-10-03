@@ -1,6 +1,8 @@
-import { parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary } from '../../shared/js/time_core.js';
+import { parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary, validateTimeSegments } from '../../shared/js/time_core.js';
+export { validateTimeSegments };
 
 let historyData = [];
+let lastComplianceKey = null;
 
 export function loadHistory() {
   historyData = JSON.parse(localStorage.getItem('ponto_history') || '[]');
@@ -15,41 +17,11 @@ export function findHistoryItem(date) {
   return historyData.find(item => item.date === date);
 }
 
-export function validateTimeSegments({ entry1, exit1, entry2, exit2 }) {
-  const e1 = parseMinutes(entry1);
-  const s1 = parseMinutes(exit1);
-  const e2 = parseMinutes(entry2);
-  const s2 = parseMinutes(exit2);
-
-  if (e1 !== null && s1 !== null && s1 <= e1) {
-    return { valid: false, message: 'Saída da manhã deve ser após entrada da manhã.' };
-  }
-  if (e2 !== null && s1 !== null && e2 < s1) {
-    return { valid: false, message: 'Volta do almoço deve ser após saída do almoço.' };
-  }
-  if (s2 !== null && e2 !== null && s2 <= e2) {
-    return { valid: false, message: 'Saída da tarde deve ser após volta do almoço.' };
-  }
-  return { valid: true, message: '' };
-}
-
 export function saveHistoryItem({ date, entry1, exit1, entry2, exit2, targetWorkHours = '08:10' }) {
-  const validation = validateTimeSegments({ entry1, exit1, entry2, exit2 });
-  if (!validation.valid) {
-    return validation;
-  }
+  const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours });
+  if (!summary.validation.valid) return summary.validation;
 
-  const targetMinutes = parseMinutes(targetWorkHours) || (8 * 60 + 10);
-  const e1m = parseMinutes(entry1);
-  const s1m = parseMinutes(exit1);
-  const e2m = parseMinutes(entry2);
-  const s2m = parseMinutes(exit2);
-
-  let worked = 0;
-  if (e1m !== null && s1m !== null && s1m > e1m) worked += (s1m - e1m);
-  if (e2m !== null && s2m !== null && s2m > e2m) worked += (s2m - e2m);
-
-  const balance = worked - targetMinutes;
+  const { workedMinutes: worked, balanceMinutes: balance } = summary;
   const item = { date, e1: entry1, s1: exit1, e2: entry2, s2: exit2, worked, balance };
 
   const existingIndex = historyData.findIndex(h => h.date === date);
@@ -156,6 +128,12 @@ function updateComplianceUI(compliance) {
   const statusEl = el('compliance-status');
   const msgList = el('compliance-messages');
   if (!box || !statusEl || !msgList) return;
+
+  // calculateTime roda a cada segundo. Não recrie os elementos se o
+  // resultado não mudou, pois isso reinicia a animação msg-in continuamente.
+  const complianceKey = JSON.stringify(compliance);
+  if (complianceKey === lastComplianceKey) return;
+  lastComplianceKey = complianceKey;
 
   msgList.innerHTML = '';
 
@@ -355,6 +333,10 @@ function initializeInputs() {
 }
 
 function initPopup() {
+  // app_logic.js também é importado pela página web para reutilizar o histórico.
+  // Inicialize a interface e o timer somente no documento do popup.
+  if (!el('compliance-box')) return;
+
   loadHistory();
   initializeInputs();
   calculateTime();
