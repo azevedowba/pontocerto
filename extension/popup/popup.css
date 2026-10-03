@@ -2,35 +2,12 @@
    As classes utilitárias compiladas aqui mantêm a CSP da extensão:
    a CSP da extensão (script-src 'self') bloqueia o Tailwind via CDN.
    As classes utilitárias que o app_logic.js injeta estão no final. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap");
-
-:root {
-  --slate-950: #020617;
-  --slate-900: #0f172a;
-  --slate-800: #1e293b;
-  --slate-700: #334155;
-  --slate-500: #64748b;
-  --slate-400: #94a3b8;
-  --slate-300: #cbd5e1;
-  --slate-100: #f1f5f9;
-  --sky: #818cf8;
-  --cyan: #6366f1;
-  --emerald: #34d399;
-  --amber: #fbbf24;
-  --rose: #fb7185;
-  --glass: rgba(15, 23, 42, 0.55);
-  --glass-line: rgba(51, 65, 85, 0.55);
-  --glass-hi: rgba(255, 255, 255, 0.06);
-  --neon: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-html, body { margin: 0; width: 100%; min-width: 380px; }
+html, body { margin: 0; width: 380px; min-width: 380px; max-width: 380px; }
 body {
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   color: var(--slate-100);
-  background: var(--slate-950);
+  background: var(--slate-900);
   -webkit-font-smoothing: antialiased;
 }
 button, input { font: inherit; }
@@ -38,10 +15,10 @@ button { cursor: pointer; }
 h1, h2, p { margin: 0; }
 
 /* ---------- Shell & fundo ---------- */
-.popup-shell { position: relative; min-height: 100vh; overflow: hidden; isolation: isolate; background: var(--slate-950); }
+.popup-shell { position: relative; min-height: 100vh; overflow: hidden; isolation: isolate; background: var(--slate-900); }
 .popup-shell::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse at 15% 0%, rgba(99, 102, 241, 0.12), transparent 42%);
+  background: radial-gradient(ellipse at 15% 0%, rgba(148, 163, 184, 0.1), transparent 42%);
 }
 
 .window-bar {
@@ -60,8 +37,8 @@ h1, h2, p { margin: 0; }
 
 /* ---------- Header ---------- */
 .popup-header { display: flex; align-items: flex-start; justify-content: space-between; }
-.eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; background: var(--neon); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.popup-header h1 { margin-top: 6px; font-size: 25px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.eyebrow { color: var(--slate-400); font-size: 9px; font-weight: 700; letter-spacing: 0.2em; }
+.popup-header h1 { margin-top: 5px; font-size: 20px; font-weight: 700; line-height: 1; }
 .header-symbol {
   display: grid; place-items: center; width: 34px; height: 34px; color: var(--sky);
   border: 1px solid rgba(129, 140, 248, 0.24); border-radius: 11px;
@@ -74,39 +51,46 @@ h1, h2, p { margin: 0; }
 .glass-card {
   position: relative;
   padding: 15px;
-  border: 1px solid var(--glass-line);
+  border: 1px solid rgba(71, 85, 105, 0.65);
   border-radius: 16px;
-  background: linear-gradient(160deg, rgba(30, 41, 59, 0.55), rgba(15, 23, 42, 0.45));
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: 0 20px 40px -18px rgba(0, 0, 0, 0.8), inset 0 1px 0 var(--glass-hi);
+  background: linear-gradient(160deg, rgba(51, 65, 85, 0.48), rgba(30, 41, 59, 0.72));
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: 0 14px 28px -18px rgba(0, 0, 0, 0.55), inset 0 1px 0 var(--glass-hi);
 }
 .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.punch-header { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; gap: 9px; }
+.punch-heading { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 8px; }
+.punch-heading-copy { min-width: 0; }
+.punch-heading-copy h2 { font-size: 12px; line-height: 1.2; }
+.punch-heading-copy p { font-size: 9px; line-height: 1.35; }
+.punch-header .field-pill { padding: 4px 8px; }
 .card-header h2 { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
 .card-header p { margin-top: 3px; color: var(--slate-500); font-size: 10px; }
 
 .field-pill {
   display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px;
-  border: 1px solid rgba(129, 140, 248, 0.24); border-radius: 999px;
-  background: rgba(99, 102, 241, 0.08); cursor: text;
+  border: 1px solid rgba(100, 116, 139, 0.55); border-radius: 999px;
+  background: rgba(15, 23, 42, 0.42); cursor: text;
 }
-.field-pill span { color: var(--sky); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.input-small { width: 40px; padding: 0; border: 0; outline: 0; color: var(--slate-100); background: transparent; font: 700 11px/1 "JetBrains Mono", monospace; }
+.field-pill span { color: var(--slate-400); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.input-small { width: 40px; padding: 0; border: 0; outline: 0; color: var(--slate-100); background: transparent; font: 700 11px/1 Consolas, monospace; }
 
 /* ---------- Campos flutuantes ---------- */
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
 .float-tile {
   padding: 10px 10px 9px;
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  border: 1px solid rgba(71, 85, 105, 0.62);
   border-radius: 12px;
-  background: rgba(2, 6, 23, 0.45);
-  box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(15, 23, 42, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 .float-tile:hover { transform: translateY(-2px); border-color: rgba(71, 85, 105, 0.8); box-shadow: 0 16px 28px -14px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
-.float-tile:focus-within { border-color: rgba(129, 140, 248, 0.6); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
+.float-tile:focus-within { border-color: rgba(148, 163, 184, 0.7); box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12); }
 .tile-accent { border-color: rgba(52, 211, 153, 0.3); }
 .tile-accent:focus-within { border-color: rgba(52, 211, 153, 0.65); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.12), 0 16px 28px -14px rgba(52, 211, 153, 0.35); }
+.float-tile:has(.field-invalid) { border-color: var(--rose); background: rgba(76, 5, 25, 0.35); box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.12); }
 
 .field-group label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--slate-400); font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .field-indicator { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
@@ -116,7 +100,7 @@ h1, h2, p { margin: 0; }
 .input-field {
   width: 100%; height: 26px; padding: 0; border: 0; outline: none;
   color: var(--slate-100); background: transparent;
-  font: 700 17px/1 "JetBrains Mono", monospace; letter-spacing: -0.01em;
+  font: 700 17px/1 Consolas, monospace; letter-spacing: -0.01em;
 }
 .input-accent { color: #a7f3d0; }
 .input-field::-webkit-calendar-picker-indicator { filter: invert(0.75); opacity: 0.45; cursor: pointer; }
@@ -130,7 +114,7 @@ button {
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
 button:active { transform: translateY(1px) scale(0.98); }
-button:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+button:focus-visible { outline: 2px solid var(--slate-300); outline-offset: 2px; }
 button svg { width: 13px; height: 13px; flex: none; }
 
 .btn-secondary {
@@ -139,14 +123,14 @@ button svg { width: 13px; height: 13px; flex: none; }
   font-size: 11px; font-weight: 600;
   box-shadow: inset 0 1px 0 var(--glass-hi);
 }
-.btn-secondary:hover { color: #fff; border-color: rgba(129, 140, 248, 0.45); background: rgba(99, 102, 241, 0.1); box-shadow: 0 0 16px -8px rgba(99, 102, 241, 0.6); }
+.btn-secondary:hover { color: #fff; border-color: rgba(148, 163, 184, 0.7); background: rgba(71, 85, 105, 0.5); }
 
 .btn-primary {
-  border: 0; color: #fff; background: var(--neon);
+  border: 0; color: #fff; background: linear-gradient(135deg, #059669, #047857);
   font-size: 12px; font-weight: 800; letter-spacing: 0.01em;
-  box-shadow: 0 8px 18px -8px rgba(79, 70, 229, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 18px -8px rgba(5, 150, 105, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
-.btn-primary:hover { filter: brightness(1.08); box-shadow: 0 10px 22px -8px rgba(79, 70, 229, 0.75); }
+.btn-primary:hover { filter: brightness(1.08); box-shadow: 0 10px 22px -8px rgba(5, 150, 105, 0.55); }
 
 .btn-danger { border: 1px solid rgba(251, 113, 133, 0.3); color: var(--rose); background: rgba(251, 113, 133, 0.08); }
 .btn-danger:hover { background: rgba(251, 113, 133, 0.16); box-shadow: 0 0 18px -6px rgba(251, 113, 133, 0.6); }
@@ -155,17 +139,20 @@ button svg { width: 13px; height: 13px; flex: none; }
 /* ---------- Saldo ---------- */
 .action-row { display: grid; gap: 10px; }
 .summary-row {
-  display: grid; grid-template-columns: 1fr auto; align-items: end; padding: 14px 16px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(52, 211, 153, 0.04) 60%, rgba(15, 23, 42, 0.4));
-  border-color: rgba(129, 140, 248, 0.22);
+  display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 11px 16px; padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.36), rgba(30, 41, 59, 0.72));
+  border-color: rgba(100, 116, 139, 0.55);
 }
-.summary-row > span:first-child { align-self: center; color: var(--slate-400); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; }
-.summary-row strong {
-  grid-row: span 2; font: 700 30px/1 "JetBrains Mono", monospace; letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #fff, #c7d2fe); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.22));
+.summary-stat { display: grid; gap: 4px; }
+.summary-stat > span { color: var(--slate-400); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; }
+.summary-stat strong {
+  font: 700 20px/1 Consolas, monospace;
+  background: linear-gradient(180deg, #fff, #cbd5e1); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 8px rgba(148, 163, 184, 0.16));
 }
-.balance-caption { color: var(--slate-500); font-size: 9px; margin-top: 3px; }
+.summary-stat-remaining strong { color: var(--slate-300); background: none; filter: none; }
+.progress-track { grid-column: 1 / -1; height: 8px; padding: 1px; overflow: hidden; border: 1px solid var(--slate-700); border-radius: 999px; background: rgba(2, 6, 23, 0.75); }
+.progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #94a3b8, #34d399); transition: width 250ms ease; }
 .button-group { display: grid; grid-template-columns: 1fr 38px 38px; gap: 8px; }
 .button-group button { min-height: 38px; }
 
@@ -174,10 +161,11 @@ button svg { width: 13px; height: 13px; flex: none; }
    o innerHTML de #compliance-status e os <li> de #compliance-messages.
    O CSS abaixo apenas estiliza em volta dessas classes. */
 .compliance-box {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  font-size: 13px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 10px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(14px);
@@ -217,57 +205,62 @@ button svg { width: 13px; height: 13px; flex: none; }
 
 /* ---------- Linha de status ---------- */
 #compliance-status {
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
   letter-spacing: .01em;
 }
 
-.compliance-box i.fa-solid {
-  font-size: 15px;
+.compliance-icon {
+  font-size: 12px;
   display: inline-flex;
+  width: 12px;
+  height: 12px;
+  flex: none;
 }
 
 /* Check estático e elegante */
-.compliance-box .fa-circle-check {
+.compliance-icon.is-valid {
   color: #34d399;
   filter: drop-shadow(0 0 2px rgba(52, 211, 153, .40));
 }
 
 /* Alerta estático e elegante */
-.compliance-box .fa-triangle-exclamation {
+.compliance-icon.is-invalid {
   color: #fb7185;
   filter: drop-shadow(0 0 2px rgba(251, 113, 133, .35));
 }
 
 /* ---------- Lista de infrações (Não Conforme) ---------- */
 #compliance-messages {
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 #compliance-messages li {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  padding: 7px 10px 7px 12px;
-  border-radius: 9px;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 7px;
   background: rgba(244, 63, 94, .08);
   border: 1px solid rgba(251, 113, 133, .15);
-  line-height: 1.45;
+  font-size: 9px;
+  line-height: 1.3;
   animation: msg-in .35s ease both;
 }
 
 #compliance-messages li::before {
   content: "";
   flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  margin-top: 2px;
+  width: 11px;
+  height: 11px;
+  margin-top: 1px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fb7185' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
@@ -288,18 +281,18 @@ button svg { width: 13px; height: 13px; flex: none; }
 .history-section { padding: 14px 12px 12px; }
 .history-header { align-items: center; margin-bottom: 10px; padding: 0 3px; }
 .history-header h2 { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate-300); }
-.history-header span { padding: 3px 8px; border: 1px solid var(--glass-line); border-radius: 999px; color: var(--slate-400); background: rgba(2, 6, 23, 0.4); font: 600 9px/1 "JetBrains Mono", monospace; }
+.history-header span { padding: 3px 8px; border: 1px solid var(--glass-line); border-radius: 999px; color: var(--slate-300); background: rgba(30, 41, 59, 0.5); font: 600 9px/1 Consolas, monospace; }
 .table-wrapper { max-width: 100%; max-height: 220px; overflow: auto; border-radius: 10px; }
 .table-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
 .table-wrapper::-webkit-scrollbar-thumb { background: var(--slate-700); border-radius: 99px; }
 .history-table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .history-table th { position: sticky; top: 0; padding: 7px 6px; text-align: left; white-space: nowrap; color: var(--slate-500); font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(15, 23, 42, 0.92); border-bottom: 1px solid var(--glass-line); }
-.history-table td { white-space: nowrap; color: var(--slate-400); font-family: "JetBrains Mono", monospace; }
+.history-table td { white-space: nowrap; color: var(--slate-400); font-family: Consolas, monospace; }
 .history-table td:nth-child(6) { color: var(--emerald); font-weight: 700; }
 .history-table:has(tbody:empty) thead { display: none; }
 
 .empty-msg { display: flex; flex-direction: column; align-items: center; padding: 16px; border: 1px dashed var(--slate-700); border-radius: 12px; color: var(--slate-500); background: rgba(2, 6, 23, 0.3); text-align: center; }
-.empty-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 7px; border-radius: 10px; color: var(--sky); background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(129, 140, 248, 0.2); }
+.empty-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 7px; border-radius: 10px; color: var(--slate-300); background: rgba(71, 85, 105, 0.24); border: 1px solid rgba(100, 116, 139, 0.35); }
 .empty-icon svg { width: 16px; height: 16px; }
 .empty-msg strong { color: var(--slate-300); font-size: 11px; }
 .empty-msg > span:last-child { margin-top: 3px; font-size: 10px; }
@@ -308,15 +301,15 @@ button svg { width: 13px; height: 13px; flex: none; }
 .toast-container { position: fixed; z-index: 50; right: 12px; bottom: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 .toast {
   display: flex; align-items: center; gap: 9px; padding: 10px 13px;
-  border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 12px;
+  border: 1px solid rgba(100, 116, 139, 0.5); border-radius: 12px;
   color: var(--slate-100); background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(20px); font-size: 12px; font-weight: 500;
-  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.55), 0 0 18px -10px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 16px 34px -12px rgba(0, 0, 0, 0.55);
   opacity: 0; transform: translateY(10px) scale(0.98);
   transition: opacity 220ms ease, transform 220ms ease;
 }
 .toast-show { opacity: 1; transform: translateY(0) scale(1); }
-.toast-icon { color: var(--sky); }
+.toast-icon { width: 16px; height: 16px; flex: none; color: var(--sky); }
 
 /* ---------- Utilitários injetados pelo app_logic.js (equivalentes Tailwind) ---------- */
 .hidden { display: none !important; }

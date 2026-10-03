@@ -111,7 +111,7 @@
 
                         <div class="flex items-center space-x-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/50">
                             <span class="text-xs text-slate-400 pl-2">Meta:</span>
-                            <input type="text" id="target-work-hours" value="08:10" onchange="calculateTime()" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-brand-400 focus:outline-none focus:border-brand-500">
+                            <input type="text" id="target-work-hours" value="08:00" onchange="calculateTime()" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-brand-400 focus:outline-none focus:border-brand-500">
                         </div>
                     </div>
 
@@ -182,17 +182,17 @@
                             <div id="target-exit-display" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
                                 --:--
                             </div>
-                            <p id="target-exit-subtext" class="text-xs text-slate-500 mt-1">Para cumprir 8h 10m de trabalho líquido</p>
+                            <p id="target-exit-subtext" class="text-xs text-slate-500 mt-1">Para cumprir 8h 00m de trabalho líquido</p>
                         </div>
 
                         <!-- Progress Bar -->
                         <div class="mt-6 space-y-2">
                             <div class="flex justify-between text-xs font-medium">
                                 <span class="text-slate-400">Trabalhado: <strong id="worked-time-text" class="text-white">0h 00m</strong></span>
-                                <span class="text-slate-400">Falta: <strong id="remaining-time-text" class="text-brand-400">8h 10m</strong></span>
+                                <span class="text-slate-400">Falta: <strong id="remaining-time-text" class="text-brand-400">8h 00m</strong></span>
                             </div>
                             <div class="w-full bg-slate-900 rounded-full h-3 p-0.5 border border-slate-700">
-                                <div id="progress-bar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                <div id="progress-bar" role="progressbar" aria-label="Progresso da jornada" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
@@ -268,7 +268,7 @@
                                 <th class="p-3">Entrada 2</th>
                                 <th class="p-3">Saída 2</th>
                                 <th class="p-3">Total Trabalhado</th>
-                                <th class="p-3">Saldo (Meta 8h10m)</th>
+                                <th class="p-3">Saldo (Meta 8h00m)</th>
                                 <th class="p-3 rounded-r-xl text-right">Ação</th>
                             </tr>
                         </thead>
@@ -296,7 +296,7 @@
 
                     <div class="space-y-4">
                         <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2">
-                            <span class="text-xs text-slate-400 font-medium">Tempo restante de trabalho até bater 8h 10m:</span>
+                            <span class="text-xs text-slate-400 font-medium">Tempo restante de trabalho até bater 8h 00m:</span>
                             <div id="vpn-calculated-hours" class="text-xl font-bold text-brand-400">0.00 Horas</div>
                         </div>
 
@@ -390,7 +390,7 @@
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <script type="module">
-        import { parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
+        import { DEFAULT_TARGET_WORK_HOURS, getLocalDateKey, getPontoFieldIssues, parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
         import { loadHistory, saveHistoryItem, deleteHistoryItem as removeHistoryItem, exportHistoryCSV as exportHistoryCSVApp, getHistoryData, findHistoryItem } from './extension/popup/app_logic.js';
 
         let timerInterval = null;
@@ -403,7 +403,7 @@
 
             // Set default entry 1 to 08:00 if empty
             if (!document.getElementById('t-entry1').value) {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = getLocalDateKey();
                 const savedToday = findHistoryItem(todayStr);
                 if (savedToday) {
                     document.getElementById('t-entry1').value = savedToday.e1 || '';
@@ -542,17 +542,21 @@
             const exit1 = document.getElementById('t-exit1').value;
             const entry2 = document.getElementById('t-entry2').value;
             const exit2 = document.getElementById('t-exit2').value;
-            const targetWorkHours = document.getElementById('target-work-hours').value || '08:10';
+            const targetWorkHours = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
 
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
             const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours, nowMinutes });
 
+            updateFieldValidation(getPontoFieldIssues({ entry1, exit1, entry2, exit2 }));
+
             document.getElementById('worked-time-text').innerText = formatMinutesToHM(summary.workedMinutes);
             document.getElementById('remaining-time-text').innerText = formatMinutesToHM(summary.remainingMinutes);
             document.getElementById('progress-bar').style.width = `${summary.progressPct}%`;
+            document.getElementById('progress-bar').setAttribute('aria-valuenow', String(summary.progressPct));
             document.getElementById('vpn-calculated-hours').innerText = `${summary.hoursDecimal} Horas (${summary.remainingMinutes} minutos)`;
             document.getElementById('cmd-output').innerText = `python disconnect_vpn.py --hours ${summary.hoursDecimal}`;
+            document.getElementById('target-exit-subtext').innerText = `Para cumprir ${formatMinutesToHM(summary.targetMinutes)} de trabalho líquido`;
 
             const targetExitDisplay = document.getElementById('target-exit-display');
             if (summary.targetExit) {
@@ -590,6 +594,25 @@
             }
         }
 
+        function updateFieldValidation(issues) {
+            const fieldIds = {
+                entry1: 't-entry1',
+                exit1: 't-exit1',
+                entry2: 't-entry2',
+                exit2: 't-exit2'
+            };
+
+            Object.entries(fieldIds).forEach(([key, id]) => {
+                const input = document.getElementById(id);
+                if (!input) return;
+                const messages = issues[key];
+                const invalid = messages.length > 0;
+                input.classList.toggle('field-invalid', invalid);
+                input.setAttribute('aria-invalid', String(invalid));
+                input.title = messages.join(' ');
+            });
+        }
+
         function startLiveTimer() {
             if(timerInterval) clearInterval(timerInterval);
             
@@ -608,8 +631,8 @@
                 }
 
                 if (e1 !== null && s1 !== null && s1 > e1 && e2 !== null) {
-                    const targetStr = document.getElementById('target-work-hours').value || '08:10';
-                    const targetMins = parseMinutes(targetStr) || (8 * 60 + 10);
+                    const targetStr = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
+                    const targetMins = parseMinutes(targetStr) || parseMinutes(DEFAULT_TARGET_WORK_HOURS);
                     const shift1Worked = Math.max(0, s1 - e1);
                     const remainingAfterMorning = Math.max(0, targetMins - shift1Worked);
                     const targetExitMin = e2 + remainingAfterMorning;
@@ -621,7 +644,7 @@
 
                     if (diffSecs <= 0) {
                         document.getElementById('countdown-text').innerText = "00:00:00";
-                        document.getElementById('countdown-subtext').innerText = "Meta de 8h 10m atingida! Hora de sair.";
+                        document.getElementById('countdown-subtext').innerText = `Meta de ${formatMinutesToHM(targetMins)} atingida! Hora de sair.`;
                         checkAndSendNotification();
                     } else {
                         const h = Math.floor(diffSecs / 3600);
@@ -656,12 +679,12 @@
         }
 
         async function saveTodayToHistory() {
-            const dateStr = new Date().toISOString().split('T')[0];
+            const dateStr = getLocalDateKey();
             const entry1 = document.getElementById('t-entry1').value;
             const exit1 = document.getElementById('t-exit1').value;
             const entry2 = document.getElementById('t-entry2').value;
             const exit2 = document.getElementById('t-exit2').value;
-            const targetWorkHours = document.getElementById('target-work-hours').value || '08:10';
+            const targetWorkHours = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
 
             const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, targetWorkHours });
             if (!result.valid) {
@@ -757,7 +780,8 @@
             Notification.requestPermission().then(permission => {
                 if (permission === "granted") {
                     showToast("Notificações ativadas com sucesso!");
-                    new Notification("Ponto Certo", { body: "Você será notificado quando atingir as 8h 10m de trabalho!" });
+                    const target = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
+                    new Notification("Ponto Certo", { body: `Você será notificado quando atingir ${formatMinutesToHM(parseMinutes(target) || 8 * 60)} de trabalho!` });
                 } else {
                     showToast("Permissão de notificação negada.");
                 }
@@ -765,11 +789,12 @@
         }
 
         function checkAndSendNotification() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateKey();
             if (notifiedToday && notifiedDate === today) return;
             if ("Notification" in window && Notification.permission === "granted") {
+                const target = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
                 new Notification("Ponto Certo - Hora de Sair!", {
-                    body: "Você completou 8h e 10m de trabalho hoje! Lembre-se de bater o ponto e desconectar a VPN.",
+                    body: `Você completou ${formatMinutesToHM(parseMinutes(target) || parseMinutes(DEFAULT_TARGET_WORK_HOURS))} de trabalho hoje! Lembre-se de bater o ponto e desconectar a VPN.`,
                     icon: "https://cdn-icons-png.flaticon.com/512/2838/2838779.png"
                 });
                 notifiedToday = true;

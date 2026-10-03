@@ -1,5 +1,6 @@
 // Meta padrão exibida pela web e pela extensão.
-const DEFAULT_TARGET_MINUTES = 8 * 60 + 10;
+export const DEFAULT_TARGET_WORK_HOURS = '08:00';
+const DEFAULT_TARGET_MINUTES = 8 * 60;
 
 // Constantes para Horários e Durações (em minutos)
 const MIN_ENTRY_FLEX_MINUTES = 7 * 60; // 07:00
@@ -21,6 +22,13 @@ const MIN_SHIFT_DURATION_MINUTES = 3 * 60; // 3 horas
 const MAX_SHIFT_DURATION_MINUTES = 5 * 60; // 5 horas
 
 const DAILY_WORK_TOLERANCE_MINUTES = 10; // Tolerância de 10 minutos adicionais para jornada diária
+
+export function getLocalDateKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 export function parseMinutes(timeStr) {
     if (!timeStr) return null;
@@ -59,6 +67,70 @@ export function validateTimeSegments({ entry1, exit1, entry2, exit2 }) {
         return { valid: false, message: 'Saída da tarde deve ser após volta do almoço.' };
     }
     return { valid: true, message: '' };
+}
+
+export function getPontoFieldIssues({ entry1, exit1, entry2, exit2 }) {
+    const issues = { entry1: [], exit1: [], entry2: [], exit2: [] };
+    const addIssue = (fields, message) => {
+        fields.forEach(field => issues[field].push(message));
+    };
+    const e1 = parseMinutes(entry1);
+    const s1 = parseMinutes(exit1);
+    const e2 = parseMinutes(entry2);
+    const s2 = parseMinutes(exit2);
+
+    if (e1 !== null && (e1 < MIN_ENTRY_FLEX_MINUTES || e1 > MAX_ENTRY_FLEX_MINUTES)) {
+        addIssue(['entry1'], 'Entrada fora da janela flexível (07:00 às 09:00).');
+    }
+    if (s2 !== null && (s2 < MIN_EXIT_FLEX_MINUTES || s2 > MAX_EXIT_FLEX_MINUTES)) {
+        addIssue(['exit2'], 'Saída fora da janela flexível (17:00 às 19:00).');
+    }
+    if (e1 !== null && e1 > CORE1_START_MINUTES) {
+        addIssue(['entry1'], 'Entrada após o início do horário núcleo (09:00).');
+    }
+    if (s1 !== null && s1 < CORE1_END_MINUTES) {
+        addIssue(['exit1'], 'Saída para o almoço antes do término do horário núcleo (11:30).');
+    }
+    if (e2 !== null && e2 > CORE2_START_MINUTES) {
+        addIssue(['entry2'], 'Retorno do almoço após o início do horário núcleo (14:00).');
+    }
+    if (s2 !== null && s2 < CORE2_END_MINUTES) {
+        addIssue(['exit2'], 'Saída antes do término do horário núcleo (17:00).');
+    }
+
+    if (e1 !== null && s1 !== null) {
+        if (s1 <= e1) addIssue(['entry1', 'exit1'], 'Saída da manhã deve ser após entrada da manhã.');
+        const morningDuration = s1 - e1;
+        if (morningDuration < MIN_SHIFT_DURATION_MINUTES || morningDuration > MAX_SHIFT_DURATION_MINUTES) {
+            addIssue(['entry1', 'exit1'], 'Turno da manhã fora da duração permitida (3h a 5h).');
+        }
+    }
+    if (s1 !== null && e2 !== null) {
+        if (e2 < s1) addIssue(['exit1', 'entry2'], 'Volta do almoço deve ser após saída do almoço.');
+        const lunchDuration = e2 - s1;
+        if (lunchDuration < MIN_LUNCH_DURATION_MINUTES) {
+            addIssue(['exit1', 'entry2'], 'Intervalo de almoço menor que o mínimo de 30 minutos.');
+        } else if (lunchDuration > MAX_LUNCH_DURATION_MINUTES) {
+            addIssue(['exit1', 'entry2'], 'Intervalo de almoço maior que o máximo de 2h30.');
+        }
+    }
+    if (e2 !== null && s2 !== null) {
+        if (s2 <= e2) addIssue(['entry2', 'exit2'], 'Saída da tarde deve ser após volta do almoço.');
+        const afternoonDuration = s2 - e2;
+        if (afternoonDuration < MIN_SHIFT_DURATION_MINUTES || afternoonDuration > MAX_SHIFT_DURATION_MINUTES) {
+            addIssue(['entry2', 'exit2'], 'Turno da tarde fora da duração permitida (3h a 5h).');
+        }
+    }
+    if (e1 !== null && s1 !== null && e2 !== null && s2 !== null) {
+        const workedMinutes = (s1 - e1) + (s2 - e2);
+        if (workedMinutes < DEFAULT_TARGET_MINUTES) {
+            addIssue(['exit1', 'exit2'], 'Jornada diária abaixo de 08:00.');
+        } else if (workedMinutes > DEFAULT_TARGET_MINUTES + DAILY_WORK_TOLERANCE_MINUTES) {
+            addIssue(['exit1', 'exit2'], 'Jornada diária acima do limite de 08:10.');
+        }
+    }
+
+    return issues;
 }
 
 export function getShiftMinutes({ entry, exit }) {
@@ -108,7 +180,7 @@ export function calculateBalance(workedMinutes, targetMinutes = DEFAULT_TARGET_M
     return workedMinutes - targetMinutes;
 }
 
-export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours = '08:10', nowMinutes = null }) {
+export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS, nowMinutes = null }) {
     const targetMinutes = parseMinutes(targetWorkHours) || DEFAULT_TARGET_MINUTES;
     const validation = validateTimeSegments({ entry1, exit1, entry2, exit2 });
     const compliance = validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours });
@@ -132,7 +204,7 @@ export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours
     };
 }
 
-export function validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours = '08:10' }) {
+export function validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS }) {
     const messages = [];
     const e1 = parseMinutes(entry1);
     const s1 = parseMinutes(exit1);

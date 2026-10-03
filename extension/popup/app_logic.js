@@ -1,8 +1,9 @@
-import { parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary, validateTimeSegments } from '../../shared/js/time_core.js';
+import { DEFAULT_TARGET_WORK_HOURS, getLocalDateKey, getPontoFieldIssues, parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary, validateTimeSegments } from '../../shared/js/time_core.js';
 export { validateTimeSegments };
 
 let historyData = [];
 let lastComplianceKey = null;
+const DRAFT_STORAGE_KEY = 'ponto_current_draft';
 
 export function loadHistory() {
   historyData = JSON.parse(localStorage.getItem('ponto_history') || '[]');
@@ -17,20 +18,14 @@ export function findHistoryItem(date) {
   return historyData.find(item => item.date === date);
 }
 
-export function saveHistoryItem({ date, entry1, exit1, entry2, exit2, targetWorkHours = '08:10' }) {
+export function saveHistoryItem({ date, entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS }) {
   const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours });
   if (!summary.validation.valid) return summary.validation;
 
   const { workedMinutes: worked, balanceMinutes: balance } = summary;
   const item = { date, e1: entry1, s1: exit1, e2: entry2, s2: exit2, worked, balance };
 
-  const existingIndex = historyData.findIndex(h => h.date === date);
-  if (existingIndex >= 0) {
-    historyData[existingIndex] = item;
-  } else {
-    historyData.unshift(item);
-  }
-
+  historyData.unshift(item);
   localStorage.setItem('ponto_history', JSON.stringify(historyData));
   return { valid: true, item };
 }
@@ -59,7 +54,7 @@ export function exportHistoryCSV(filenamePrefix = 'historico_ponto') {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `${filenamePrefix}_${getLocalDateKey()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 
@@ -139,11 +134,11 @@ function updateComplianceUI(compliance) {
 
   if (compliance.isConforme) {
     box.className = 'compliance-box bg-emerald-950/40 border border-emerald-800 text-emerald-300';
-    statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> Dia Conforme com as Regras`;
+    statusEl.innerHTML = '<svg class="compliance-icon is-valid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg> Dia Conforme com as Regras';
     box.classList.remove('hidden');
   } else {
     box.className = 'compliance-box bg-rose-950/40 border border-rose-800 text-rose-300';
-    statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Dia Não Conforme`;
+    statusEl.innerHTML = '<svg class="compliance-icon is-invalid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg> Dia Não Conforme';
     compliance.messages.forEach(msg => {
       const li = document.createElement('li');
       li.textContent = msg;
@@ -157,19 +152,41 @@ function calculateTime() {
   const exit1 = getValue(ids.exit1);
   const entry2 = getValue(ids.entry2);
   const exit2 = getValue(ids.exit2);
-  const targetWorkHours = getValue(ids.targetWorkHours) || '08:10';
+  const targetWorkHours = getValue(ids.targetWorkHours) || DEFAULT_TARGET_WORK_HOURS;
 
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours, nowMinutes });
 
   const balanceEl = el('hours-balance');
+  const workedEl = el('worked-time-text');
+  const remainingEl = el('remaining-time-text');
+  const progressBar = el('progress-bar');
   const historyCountEl = el(ids.historyCount);
   if (balanceEl) balanceEl.innerText = formatMinutesToHM(summary.balanceMinutes);
+  if (workedEl) workedEl.innerText = formatMinutesToHM(summary.workedMinutes);
+  if (remainingEl) remainingEl.innerText = formatMinutesToHM(summary.remainingMinutes);
+  if (progressBar) {
+    progressBar.style.width = `${summary.progressPct}%`;
+    progressBar.parentElement.setAttribute('aria-valuenow', String(summary.progressPct));
+  }
   if (historyCountEl) historyCountEl.innerText = `${getHistoryData().length} registro(s)`;
 
   updateComplianceUI(summary.compliance);
+  updateFieldIssues(getPontoFieldIssues({ entry1, exit1, entry2, exit2 }));
   updateInputSuggestions(entry1, exit1, entry2, summary.targetMinutes);
+}
+
+function updateFieldIssues(issues) {
+  ['entry1', 'exit1', 'entry2', 'exit2'].forEach((key) => {
+    const input = el(ids[key]);
+    if (!input) return;
+    const messages = issues[key];
+    const invalid = messages.length > 0;
+    input.classList.toggle('field-invalid', invalid);
+    input.setAttribute('aria-invalid', String(invalid));
+    input.title = messages.join(' ');
+  });
 }
 
 function startLiveTimer() {
@@ -182,6 +199,7 @@ function fillCurrentTime(inputId) {
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   const input = el(inputId);
   if (input) input.value = timeStr;
+  saveDraft();
   calculateTime();
   showToast('Horário atual registrado!');
 }
@@ -191,17 +209,18 @@ function clearTodayInputs() {
     const input = el(id);
     if (input) input.value = '';
   });
+  saveDraft();
   calculateTime();
   showToast('Campos limpos com sucesso.');
 }
 
 function saveTodayEntry() {
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = getLocalDateKey();
   const entry1 = getValue(ids.entry1);
   const exit1 = getValue(ids.exit1);
   const entry2 = getValue(ids.entry2);
   const exit2 = getValue(ids.exit2);
-  const targetWorkHours = getValue(ids.targetWorkHours) || '08:10';
+  const targetWorkHours = getValue(ids.targetWorkHours) || DEFAULT_TARGET_WORK_HOURS;
 
   const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, targetWorkHours });
   if (!result.valid) {
@@ -240,7 +259,7 @@ function renderHistoryTable() {
       <td class="p-3">${formatMinutesToHM(item.worked)}</td>
       <td class="p-3 text-right">
         <button type="button" class="delete-row-btn text-rose-400 hover:text-rose-300 p-1" data-index="${idx}" title="Excluir">
-          <i class="fa-solid fa-trash"></i>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 14h10l1-14M10 11v6m4-6v6"/></svg>
         </button>
       </td>
     `;
@@ -271,7 +290,7 @@ function showToast(message) {
 
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.innerHTML = `<i class="fa-solid fa-circle-info toast-icon"></i><span>${message}</span>`;
+  toast.innerHTML = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 11v5m0-8h.01"/></svg><span>${message}</span>`;
   container.appendChild(toast);
 
   requestAnimationFrame(() => {
@@ -312,13 +331,58 @@ function bindEvents() {
   ['targetWorkHours', 'entry1', 'exit1', 'entry2', 'exit2'].forEach((key) => {
     const input = el(ids[key]);
     if (input) {
-      input.addEventListener('input', calculateTime);
+      input.addEventListener('input', () => {
+        calculateTime();
+        saveDraft();
+      });
     }
   });
 }
 
+function saveDraft() {
+  const draft = {
+    date: getLocalDateKey(),
+    targetWorkHours: getValue(ids.targetWorkHours),
+    entry1: getValue(ids.entry1),
+    exit1: getValue(ids.exit1),
+    entry2: getValue(ids.entry2),
+    exit2: getValue(ids.exit2)
+  };
+
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.warn('Não foi possível salvar o rascunho do ponto.', error);
+  }
+}
+
+function loadDraft() {
+  try {
+    const rawDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!rawDraft) return null;
+
+    const draft = JSON.parse(rawDraft);
+    if (!draft || draft.date !== getLocalDateKey()) return null;
+    return draft;
+  } catch (error) {
+    console.warn('Não foi possível recuperar o rascunho do ponto.', error);
+    return null;
+  }
+}
+
 function initializeInputs() {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const draft = loadDraft();
+  if (draft) {
+    const savedTarget = draft.targetWorkHours === '08:10' ? DEFAULT_TARGET_WORK_HOURS : draft.targetWorkHours;
+    if (el(ids.targetWorkHours)) el(ids.targetWorkHours).value = savedTarget || DEFAULT_TARGET_WORK_HOURS;
+    if (el(ids.entry1)) el(ids.entry1).value = draft.entry1 || '';
+    if (el(ids.exit1)) el(ids.exit1).value = draft.exit1 || '';
+    if (el(ids.entry2)) el(ids.entry2).value = draft.entry2 || '';
+    if (el(ids.exit2)) el(ids.exit2).value = draft.exit2 || '';
+    return;
+  }
+
+  const todayStr = getLocalDateKey();
   const saved = findHistoryItem(todayStr);
   if (saved) {
     if (el(ids.entry1)) el(ids.entry1).value = saved.e1 || '';

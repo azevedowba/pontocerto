@@ -1,5 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root {
+	--slate-950: #020617;
+	--slate-900: #0f172a;
+	--slate-800: #1e293b;
+	--slate-700: #334155;
+	--slate-500: #64748b;
+	--slate-400: #94a3b8;
+	--slate-300: #cbd5e1;
+	--slate-100: #f1f5f9;
+	--sky: #818cf8;
+	--cyan: #6366f1;
+	--emerald: #34d399;
+	--amber: #fbbf24;
+	--rose: #fb7185;
+	--glass: rgba(15, 23, 42, 0.55);
+	--glass-line: rgba(51, 65, 85, 0.55);
+	--glass-hi: rgba(255, 255, 255, 0.06);
+	--neon: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+	color-scheme: dark;
+}
 
-body { font-family: 'Inter', sans-serif; }
+body { font-family: "Segoe UI", system-ui, sans-serif; }
 .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
 .glass-light { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); }
+
+.field-invalid {
+	color: #fecdd3 !important;
+	border-color: var(--rose) !important;
+	background-color: rgba(136, 19, 55, 0.16) !important;
+	box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.12) !important;
+}
+
+.field-invalid:focus {
+	border-color: var(--rose) !important;
+	box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.2) !important;
+}
