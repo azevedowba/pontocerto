@@ -2,26 +2,150 @@
 export const DEFAULT_TARGET_WORK_HOURS = '08:00';
 const DEFAULT_TARGET_MINUTES = 8 * 60;
 
-// Constantes para Horários e Durações (em minutos)
-const MIN_ENTRY_FLEX_MINUTES = 7 * 60; // 07:00
-const MAX_ENTRY_FLEX_MINUTES = 9 * 60; // 09:00
+export const DEFAULT_WORK_PROFILE = Object.freeze({
+    schemaVersion: 1,
+    name: 'Perfil inicial',
+    targetMinutes: DEFAULT_TARGET_MINUTES,
+    rules: {
+        entryWindow: { enabled: true, start: 7 * 60, end: 9 * 60 },
+        exitWindow: { enabled: true, start: 17 * 60, end: 19 * 60 },
+        corePeriods: {
+            enabled: true,
+            periods: [
+                { start: 9 * 60, end: 11 * 60 + 30 },
+                { start: 14 * 60, end: 17 * 60 }
+            ]
+        },
+        lunchDuration: { enabled: true, minMinutes: 30, maxMinutes: 150 },
+        shiftDuration: { enabled: true, minMinutes: 180, maxMinutes: 300 },
+        overtimeTolerance: { enabled: true, minutes: 10 }
+    }
+});
 
-const CORE1_START_MINUTES = 9 * 60; // 09:00
-const CORE1_END_MINUTES = 11 * 60 + 30; // 11:30
+function copyDefaultWorkProfile() {
+    return {
+        schemaVersion: DEFAULT_WORK_PROFILE.schemaVersion,
+        name: DEFAULT_WORK_PROFILE.name,
+        targetMinutes: DEFAULT_WORK_PROFILE.targetMinutes,
+        rules: {
+            entryWindow: { ...DEFAULT_WORK_PROFILE.rules.entryWindow },
+            exitWindow: { ...DEFAULT_WORK_PROFILE.rules.exitWindow },
+            corePeriods: {
+                enabled: DEFAULT_WORK_PROFILE.rules.corePeriods.enabled,
+                periods: DEFAULT_WORK_PROFILE.rules.corePeriods.periods.map(period => ({ ...period }))
+            },
+            lunchDuration: { ...DEFAULT_WORK_PROFILE.rules.lunchDuration },
+            shiftDuration: { ...DEFAULT_WORK_PROFILE.rules.shiftDuration },
+            overtimeTolerance: { ...DEFAULT_WORK_PROFILE.rules.overtimeTolerance }
+        }
+    };
+}
 
-const CORE2_START_MINUTES = 14 * 60; // 14:00
-const CORE2_END_MINUTES = 17 * 60; // 17:00
+function normalizeInteger(value, fallback, min, max) {
+    const number = Number(value);
+    return Number.isInteger(number) && number >= min && number <= max ? number : fallback;
+}
 
-const MIN_EXIT_FLEX_MINUTES = 17 * 60; // 17:00
-const MAX_EXIT_FLEX_MINUTES = 19 * 60; // 19:00
+function normalizeEnabled(value, fallback) {
+    return typeof value === 'boolean' ? value : fallback;
+}
 
-const MIN_LUNCH_DURATION_MINUTES = 30; // 30 minutos
-const MAX_LUNCH_DURATION_MINUTES = 2 * 60 + 30; // 2 horas e 30 minutos
+export function normalizeWorkProfile(profile) {
+    const defaults = copyDefaultWorkProfile();
+    if (!profile || typeof profile !== 'object') return defaults;
 
-const MIN_SHIFT_DURATION_MINUTES = 3 * 60; // 3 horas
-const MAX_SHIFT_DURATION_MINUTES = 5 * 60; // 5 horas
+    const inputRules = profile.rules && typeof profile.rules === 'object' ? profile.rules : {};
+    const normalizeWindow = (key) => {
+        const value = inputRules[key] || {};
+        return {
+            enabled: normalizeEnabled(value.enabled, defaults.rules[key].enabled),
+            start: normalizeInteger(value.start, defaults.rules[key].start, 0, 1439),
+            end: normalizeInteger(value.end, defaults.rules[key].end, 1, 1440)
+        };
+    };
+    const coreInput = inputRules.corePeriods || {};
+    const corePeriods = Array.isArray(coreInput.periods) ? coreInput.periods : [];
 
-const DAILY_WORK_TOLERANCE_MINUTES = 10; // Tolerância de 10 minutos adicionais para jornada diária
+    return {
+        schemaVersion: 1,
+        name: typeof profile.name === 'string' && profile.name.trim() ? profile.name.trim().slice(0, 60) : defaults.name,
+        targetMinutes: normalizeInteger(profile.targetMinutes, defaults.targetMinutes, 1, 1439),
+        rules: {
+            entryWindow: normalizeWindow('entryWindow'),
+            exitWindow: normalizeWindow('exitWindow'),
+            corePeriods: {
+                enabled: normalizeEnabled(coreInput.enabled, defaults.rules.corePeriods.enabled),
+                periods: defaults.rules.corePeriods.periods.map((defaultPeriod, index) => {
+                    const period = corePeriods[index] || {};
+                    return {
+                        start: normalizeInteger(period.start, defaultPeriod.start, 0, 1439),
+                        end: normalizeInteger(period.end, defaultPeriod.end, 1, 1440)
+                    };
+                })
+            },
+            lunchDuration: {
+                enabled: normalizeEnabled(inputRules.lunchDuration?.enabled, defaults.rules.lunchDuration.enabled),
+                minMinutes: normalizeInteger(inputRules.lunchDuration?.minMinutes, defaults.rules.lunchDuration.minMinutes, 0, 720),
+                maxMinutes: normalizeInteger(inputRules.lunchDuration?.maxMinutes, defaults.rules.lunchDuration.maxMinutes, 1, 720)
+            },
+            shiftDuration: {
+                enabled: normalizeEnabled(inputRules.shiftDuration?.enabled, defaults.rules.shiftDuration.enabled),
+                minMinutes: normalizeInteger(inputRules.shiftDuration?.minMinutes, defaults.rules.shiftDuration.minMinutes, 1, 720),
+                maxMinutes: normalizeInteger(inputRules.shiftDuration?.maxMinutes, defaults.rules.shiftDuration.maxMinutes, 1, 720)
+            },
+            overtimeTolerance: {
+                enabled: normalizeEnabled(inputRules.overtimeTolerance?.enabled, defaults.rules.overtimeTolerance.enabled),
+                minutes: normalizeInteger(inputRules.overtimeTolerance?.minutes, defaults.rules.overtimeTolerance.minutes, 0, 240)
+            }
+        }
+    };
+}
+
+export function validateWorkProfile(profile) {
+    const errors = [];
+    if (!profile || typeof profile !== 'object') {
+        return { valid: false, errors: ['Perfil de jornada inválido.'] };
+    }
+    if (typeof profile.name !== 'string' || !profile.name.trim() || profile.name.trim().length > 60) {
+        errors.push('Informe um nome para o perfil com até 60 caracteres.');
+    }
+
+    const rules = profile.rules || {};
+    const validateWindow = (rule, label) => {
+        if (rule?.enabled && (!Number.isInteger(rule.start) || !Number.isInteger(rule.end) || rule.start < 0 || rule.end > 1440 || rule.start >= rule.end)) {
+            errors.push(`A faixa de ${label} precisa ter início anterior ao fim.`);
+        }
+    };
+    validateWindow(rules.entryWindow, 'entrada');
+    validateWindow(rules.exitWindow, 'saída');
+
+    if (!Number.isInteger(profile.targetMinutes) || profile.targetMinutes < 1 || profile.targetMinutes > 1439) {
+        errors.push('A meta diária precisa estar entre 00:01 e 23:59.');
+    }
+    if (rules.corePeriods?.enabled) {
+        if (!Array.isArray(rules.corePeriods.periods) || rules.corePeriods.periods.length !== 2 || rules.corePeriods.periods.some(period => !Number.isInteger(period.start) || !Number.isInteger(period.end) || period.start < 0 || period.end > 1440 || period.start >= period.end)) {
+            errors.push('Informe início e fim válidos para os dois períodos núcleo.');
+        } else if (rules.corePeriods.periods[0].end > rules.corePeriods.periods[1].start) {
+            errors.push('O período núcleo da manhã deve terminar antes do início do período da tarde.');
+        }
+    }
+    for (const [key, label] of [['lunchDuration', 'intervalo de almoço'], ['shiftDuration', 'duração dos turnos']]) {
+        const rule = rules[key];
+        const minimumAllowed = key === 'shiftDuration' ? 1 : 0;
+        if (rule?.enabled && (!Number.isInteger(rule.minMinutes) || !Number.isInteger(rule.maxMinutes) || rule.minMinutes < minimumAllowed || rule.maxMinutes > 720 || rule.minMinutes >= rule.maxMinutes)) {
+            errors.push(`Os limites de ${label} são inválidos: o mínimo deve ser menor que o máximo.`);
+        }
+    }
+    const tolerance = rules.overtimeTolerance;
+    if (tolerance?.enabled && (!Number.isInteger(tolerance.minutes) || tolerance.minutes < 0 || tolerance.minutes > 240)) {
+        errors.push('A tolerância diária deve estar entre 0 e 240 minutos.');
+    }
+    if (tolerance?.enabled && Number.isInteger(profile.targetMinutes) && Number.isInteger(tolerance.minutes) && profile.targetMinutes + tolerance.minutes > 1439) {
+        errors.push('A meta somada à tolerância não pode ultrapassar 23:59.');
+    }
+
+    return { valid: errors.length === 0, errors };
+}
 
 export function getLocalDateKey(date = new Date()) {
     const year = date.getFullYear();
@@ -51,6 +175,13 @@ export function formatMinutesToTime(minutes) {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+function formatDurationForRule(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours === 0) return `${minutes} minutos`;
+    return `${hours}h${remainingMinutes ? `${remainingMinutes}m` : ''}`;
+}
+
 export function validateTimeSegments({ entry1, exit1, entry2, exit2 }) {
     const e1 = parseMinutes(entry1);
     const s1 = parseMinutes(exit1);
@@ -69,64 +200,80 @@ export function validateTimeSegments({ entry1, exit1, entry2, exit2 }) {
     return { valid: true, message: '' };
 }
 
-export function getPontoFieldIssues({ entry1, exit1, entry2, exit2 }) {
+function resolveWorkProfile(workProfile, targetWorkHours) {
+    const profile = normalizeWorkProfile(workProfile);
+    const targetFromInput = parseMinutes(targetWorkHours);
+    if (targetFromInput !== null && targetFromInput > 0) {
+        profile.targetMinutes = targetFromInput;
+    }
+    return profile;
+}
+
+export function getPontoFieldIssues({ entry1, exit1, entry2, exit2, workProfile = DEFAULT_WORK_PROFILE, targetWorkHours = null }) {
     const issues = { entry1: [], exit1: [], entry2: [], exit2: [] };
     const addIssue = (fields, message) => {
         fields.forEach(field => issues[field].push(message));
     };
+    const profile = resolveWorkProfile(workProfile, targetWorkHours);
+    const { rules } = profile;
     const e1 = parseMinutes(entry1);
     const s1 = parseMinutes(exit1);
     const e2 = parseMinutes(entry2);
     const s2 = parseMinutes(exit2);
 
-    if (e1 !== null && (e1 < MIN_ENTRY_FLEX_MINUTES || e1 > MAX_ENTRY_FLEX_MINUTES)) {
-        addIssue(['entry1'], 'Entrada fora da janela flexível (07:00 às 09:00).');
+    if (e1 !== null && rules.entryWindow.enabled && (e1 < rules.entryWindow.start || e1 > rules.entryWindow.end)) {
+        addIssue(['entry1'], `Entrada fora da janela flexível (${formatMinutesToTime(rules.entryWindow.start)} às ${formatMinutesToTime(rules.entryWindow.end)}).`);
     }
-    if (s2 !== null && (s2 < MIN_EXIT_FLEX_MINUTES || s2 > MAX_EXIT_FLEX_MINUTES)) {
-        addIssue(['exit2'], 'Saída fora da janela flexível (17:00 às 19:00).');
+    if (s2 !== null && rules.exitWindow.enabled && (s2 < rules.exitWindow.start || s2 > rules.exitWindow.end)) {
+        addIssue(['exit2'], `Saída fora da janela flexível (${formatMinutesToTime(rules.exitWindow.start)} às ${formatMinutesToTime(rules.exitWindow.end)}).`);
     }
-    if (e1 !== null && e1 > CORE1_START_MINUTES) {
-        addIssue(['entry1'], 'Entrada após o início do horário núcleo (09:00).');
-    }
-    if (s1 !== null && s1 < CORE1_END_MINUTES) {
-        addIssue(['exit1'], 'Saída para o almoço antes do término do horário núcleo (11:30).');
-    }
-    if (e2 !== null && e2 > CORE2_START_MINUTES) {
-        addIssue(['entry2'], 'Retorno do almoço após o início do horário núcleo (14:00).');
-    }
-    if (s2 !== null && s2 < CORE2_END_MINUTES) {
-        addIssue(['exit2'], 'Saída antes do término do horário núcleo (17:00).');
+    if (rules.corePeriods.enabled) {
+        const [morningCore, afternoonCore] = rules.corePeriods.periods;
+        if (e1 !== null && e1 > morningCore.start) {
+            addIssue(['entry1'], `Entrada após o início do horário núcleo (${formatMinutesToTime(morningCore.start)}).`);
+        }
+        if (s1 !== null && s1 < morningCore.end) {
+            addIssue(['exit1'], `Saída para o almoço antes do término do horário núcleo (${formatMinutesToTime(morningCore.end)}).`);
+        }
+        if (e2 !== null && e2 > afternoonCore.start) {
+            addIssue(['entry2'], `Retorno do almoço após o início do horário núcleo (${formatMinutesToTime(afternoonCore.start)}).`);
+        }
+        if (s2 !== null && s2 < afternoonCore.end) {
+            addIssue(['exit2'], `Saída antes do término do horário núcleo (${formatMinutesToTime(afternoonCore.end)}).`);
+        }
     }
 
     if (e1 !== null && s1 !== null) {
         if (s1 <= e1) addIssue(['entry1', 'exit1'], 'Saída da manhã deve ser após entrada da manhã.');
         const morningDuration = s1 - e1;
-        if (morningDuration < MIN_SHIFT_DURATION_MINUTES || morningDuration > MAX_SHIFT_DURATION_MINUTES) {
-            addIssue(['entry1', 'exit1'], 'Turno da manhã fora da duração permitida (3h a 5h).');
+        if (rules.shiftDuration.enabled && (morningDuration < rules.shiftDuration.minMinutes || morningDuration > rules.shiftDuration.maxMinutes)) {
+            addIssue(['entry1', 'exit1'], `Turno da manhã fora da duração permitida (${formatDurationForRule(rules.shiftDuration.minMinutes)} a ${formatDurationForRule(rules.shiftDuration.maxMinutes)}).`);
         }
     }
     if (s1 !== null && e2 !== null) {
         if (e2 < s1) addIssue(['exit1', 'entry2'], 'Volta do almoço deve ser após saída do almoço.');
         const lunchDuration = e2 - s1;
-        if (lunchDuration < MIN_LUNCH_DURATION_MINUTES) {
-            addIssue(['exit1', 'entry2'], 'Intervalo de almoço menor que o mínimo de 30 minutos.');
-        } else if (lunchDuration > MAX_LUNCH_DURATION_MINUTES) {
-            addIssue(['exit1', 'entry2'], 'Intervalo de almoço maior que o máximo de 2h30.');
+        if (rules.lunchDuration.enabled && lunchDuration < rules.lunchDuration.minMinutes) {
+            addIssue(['exit1', 'entry2'], `Intervalo de almoço menor que o mínimo de ${formatDurationForRule(rules.lunchDuration.minMinutes)}.`);
+        } else if (rules.lunchDuration.enabled && lunchDuration > rules.lunchDuration.maxMinutes) {
+            addIssue(['exit1', 'entry2'], `Intervalo de almoço maior que o máximo de ${formatDurationForRule(rules.lunchDuration.maxMinutes)}.`);
         }
     }
     if (e2 !== null && s2 !== null) {
         if (s2 <= e2) addIssue(['entry2', 'exit2'], 'Saída da tarde deve ser após volta do almoço.');
         const afternoonDuration = s2 - e2;
-        if (afternoonDuration < MIN_SHIFT_DURATION_MINUTES || afternoonDuration > MAX_SHIFT_DURATION_MINUTES) {
-            addIssue(['entry2', 'exit2'], 'Turno da tarde fora da duração permitida (3h a 5h).');
+        if (rules.shiftDuration.enabled && (afternoonDuration < rules.shiftDuration.minMinutes || afternoonDuration > rules.shiftDuration.maxMinutes)) {
+            addIssue(['entry2', 'exit2'], `Turno da tarde fora da duração permitida (${formatDurationForRule(rules.shiftDuration.minMinutes)} a ${formatDurationForRule(rules.shiftDuration.maxMinutes)}).`);
         }
     }
     if (e1 !== null && s1 !== null && e2 !== null && s2 !== null) {
         const workedMinutes = (s1 - e1) + (s2 - e2);
-        if (workedMinutes < DEFAULT_TARGET_MINUTES) {
-            addIssue(['exit1', 'exit2'], 'Jornada diária abaixo de 08:00.');
-        } else if (workedMinutes > DEFAULT_TARGET_MINUTES + DAILY_WORK_TOLERANCE_MINUTES) {
-            addIssue(['exit1', 'exit2'], 'Jornada diária acima do limite de 08:10.');
+        if (workedMinutes < profile.targetMinutes) {
+            addIssue(['exit1', 'exit2'], `Jornada diária incompleta (abaixo de ${formatMinutesToTime(profile.targetMinutes)}).`);
+        }
+        const tolerance = rules.overtimeTolerance.enabled ? rules.overtimeTolerance.minutes : 0;
+        if (workedMinutes > profile.targetMinutes + tolerance) {
+            addIssue(['exit1', 'exit2'], `Jornada diária excede o limite permitido para o perfil (máximo de ${formatMinutesToTime(profile.targetMinutes + tolerance)}).`);
         }
     }
 
@@ -180,10 +327,11 @@ export function calculateBalance(workedMinutes, targetMinutes = DEFAULT_TARGET_M
     return workedMinutes - targetMinutes;
 }
 
-export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS, nowMinutes = null }) {
-    const targetMinutes = parseMinutes(targetWorkHours) || DEFAULT_TARGET_MINUTES;
+export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours = null, workProfile = DEFAULT_WORK_PROFILE, nowMinutes = null }) {
+    const profile = resolveWorkProfile(workProfile, targetWorkHours);
+    const targetMinutes = profile.targetMinutes;
     const validation = validateTimeSegments({ entry1, exit1, entry2, exit2 });
-    const compliance = validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours });
+    const compliance = validatePontoCompliance({ entry1, exit1, entry2, exit2, workProfile: profile });
     const workedMinutes = calculateWorkedMinutes({ entry1, exit1, entry2, exit2, nowMinutes });
     const balanceMinutes = calculateBalance(workedMinutes, targetMinutes);
     const remainingMinutes = Math.max(0, targetMinutes - workedMinutes);
@@ -204,15 +352,13 @@ export function calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours
     };
 }
 
-export function validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS }) {
-    const messages = [];
+export function validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWorkHours = null, workProfile = DEFAULT_WORK_PROFILE }) {
     const e1 = parseMinutes(entry1);
     const s1 = parseMinutes(exit1);
     const e2 = parseMinutes(entry2);
     const s2 = parseMinutes(exit2);
-    const targetMinutes = parseMinutes(targetWorkHours) || DEFAULT_TARGET_MINUTES;
+    const profile = resolveWorkProfile(workProfile, targetWorkHours);
 
-    // 1. No mínimo 4 marcações completas
     if (e1 === null || s1 === null || e2 === null || s2 === null) {
         return {
             isConforme: false,
@@ -220,65 +366,8 @@ export function validatePontoCompliance({ entry1, exit1, entry2, exit2, targetWo
         };
     }
 
-    // 2. Sequência lógica
-    const seqValidation = validateTimeSegments({ entry1, exit1, entry2, exit2 });
-    if (!seqValidation.valid) {
-        messages.push(seqValidation.message);
-    }
-
-    // 3. Horário Flexível de Entrada e Saída
-    if (e1 < MIN_ENTRY_FLEX_MINUTES || e1 > MAX_ENTRY_FLEX_MINUTES) {
-        messages.push('Entrada fora da janela flexível (07:00 às 09:00).');
-    }
-    if (s2 < MIN_EXIT_FLEX_MINUTES || s2 > MAX_EXIT_FLEX_MINUTES) {
-        messages.push('Saída fora da janela flexível (17:00 às 19:00).');
-    }
-
-    // 4. Intervalo de Almoço (30 min a 2h30)
-    const lunchDuration = e2 - s1;
-    if (lunchDuration < MIN_LUNCH_DURATION_MINUTES) {
-        messages.push('Intervalo de almoço menor que o mínimo de 30 minutos.');
-    }
-    if (lunchDuration > MAX_LUNCH_DURATION_MINUTES) {
-        messages.push('Intervalo de almoço maior que o máximo de 2h30.');
-    }
-
-    // 5. Horário Núcleo (Presença obrigatória: 09:00-11:30 e 14:00-17:00)
-    if (e1 > CORE1_START_MINUTES) {
-        messages.push('Funcionário ausente no início do horário núcleo 1 (09:00).');
-    }
-    if (s1 < CORE1_END_MINUTES) {
-        messages.push('Saída para o almoço antes do término do horário núcleo 1 (11:30).');
-    }
-    if (e2 > CORE2_START_MINUTES) {
-        messages.push('Retorno do almoço após o início do horário núcleo 2 (14:00).');
-    }
-    if (s2 < CORE2_END_MINUTES) {
-        messages.push('Saída antes do término do horário núcleo 2 (17:00).');
-    }
-
-    // 6. Jornada Mínima/Máxima por Turno (3h a 5h)
-    const shift1 = s1 - e1;
-    if (shift1 < MIN_SHIFT_DURATION_MINUTES || shift1 > MAX_SHIFT_DURATION_MINUTES) {
-        messages.push('Turno da manhã fora da duração permitida (3h a 5h).');
-    }
-    const shift2 = s2 - e2;
-    if (shift2 < MIN_SHIFT_DURATION_MINUTES || shift2 > MAX_SHIFT_DURATION_MINUTES) {
-        messages.push('Turno da tarde fora da duração permitida (3h a 5h).');
-    }
-
-            // 7. Jornada diária conforme as regras do regulamento flexível:
-    // Mínimo de 08h00 de trabalho (jornada base) e tolerância de até 10 minutos adicionais (máximo de 08h10).
-    const workedMinutes = shift1 + shift2;
-    const baseContractMinutes = 8 * 60; // 08:00
-    const maxConformeMinutes = baseContractMinutes + DAILY_WORK_TOLERANCE_MINUTES; // 08:10
-
-    if (workedMinutes < baseContractMinutes) {
-        messages.push('Jornada diária incompleta (abaixo de 08:00).');
-    }
-    if (workedMinutes > maxConformeMinutes) {
-        messages.push('Jornada diária excede o limite permitido para o dia ser considerado conforme (máximo de 08:10).');
-    }
+    const fieldIssues = getPontoFieldIssues({ entry1, exit1, entry2, exit2, workProfile: profile });
+    const messages = [...new Set(Object.values(fieldIssues).flat())];
 
     return {
         isConforme: messages.length === 0,

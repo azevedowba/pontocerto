@@ -53,6 +53,9 @@
                     <button onclick="switchTab('history')" id="tab-history" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
                         <i class="fa-solid fa-calendar-days mr-1.5"></i> Histórico
                     </button>
+                    <button onclick="switchTab('settings')" id="tab-settings" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-sliders mr-1.5"></i> Configurações
+                    </button>
                     <button onclick="switchTab('vpn')" id="tab-vpn" class="dev-only hidden px-4 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-400 hover:text-white">
                         <i class="fa-solid fa-shield-halved mr-1.5"></i> Automação VPN
                     </button>
@@ -78,6 +81,9 @@
             </button>
             <button onclick="switchTab('history')" id="mob-tab-history" class="flex flex-col items-center py-1 text-slate-400">
                 <i class="fa-solid fa-calendar-days text-base mb-1"></i> Histórico
+            </button>
+            <button onclick="switchTab('settings')" id="mob-tab-settings" class="flex flex-col items-center py-1 text-slate-400">
+                <i class="fa-solid fa-sliders text-base mb-1"></i> Configurações
             </button>
             <button onclick="switchTab('vpn')" id="mob-tab-vpn" class="dev-only hidden flex flex-col items-center py-1 text-slate-400">
                 <i class="fa-solid fa-shield-halved text-base mb-1"></i> VPN
@@ -111,7 +117,7 @@
 
                         <div class="flex items-center space-x-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/50">
                             <span class="text-xs text-slate-400 pl-2">Meta:</span>
-                            <input type="text" id="target-work-hours" value="08:00" onchange="calculateTime()" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-brand-400 focus:outline-none focus:border-brand-500">
+                            <input type="text" id="target-work-hours" value="08:00" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-brand-400" aria-label="Meta diária configurada" readonly>
                         </div>
                     </div>
 
@@ -283,6 +289,16 @@
             </div>
         </section>
 
+        <section id="view-settings" class="hidden space-y-6">
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="mb-5">
+                    <h2 class="text-lg font-bold text-white">Configurações do perfil de jornada</h2>
+                    <p class="text-xs text-slate-400 mt-1">Ajuste os limites usados para avaliar os horários deste perfil.</p>
+                </div>
+                <div id="work-profile-form-container"></div>
+            </div>
+        </section>
+
         <!-- VIEW 3: VPN AUTOMATION SCRIPT GENERATOR -->
         <section id="view-vpn" class="hidden space-y-6">
             <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
@@ -390,16 +406,29 @@
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <script type="module">
-        import { DEFAULT_TARGET_WORK_HOURS, getLocalDateKey, getPontoFieldIssues, parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
-        import { loadHistory, saveHistoryItem, deleteHistoryItem as removeHistoryItem, exportHistoryCSV as exportHistoryCSVApp, getHistoryData, findHistoryItem } from './extension/popup/app_logic.js';
+        import { getLocalDateKey, getPontoFieldIssues, formatMinutesToTime, parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
+        import { loadHistory, loadWorkProfile, saveHistoryItem, deleteHistoryItem as removeHistoryItem, exportHistoryCSV as exportHistoryCSVApp, getHistoryData, findHistoryItem, saveWorkProfile } from './extension/popup/app_logic.js';
+        import { mountWorkProfileForm } from './shared/js/work_profile_ui.js';
 
         let timerInterval = null;
+        let workProfile = loadWorkProfile();
         let isDevMode = localStorage.getItem('ponto_dev_mode') === 'true';
         let logoClickCount = 0;
 
         // Initialize App
         window.onload = function() {
             loadHistory();
+            workProfile = loadWorkProfile();
+            document.getElementById('target-work-hours').value = formatMinutesToTime(workProfile.targetMinutes);
+            mountWorkProfileForm(document.getElementById('work-profile-form-container'), {
+                profile: workProfile,
+                onSave: saveWorkProfile,
+                onSaved: (profile) => {
+                    workProfile = profile;
+                    document.getElementById('target-work-hours').value = formatMinutesToTime(profile.targetMinutes);
+                    calculateTime();
+                }
+            });
 
             // Set default entry 1 to 08:00 if empty
             if (!document.getElementById('t-entry1').value) {
@@ -420,6 +449,10 @@
             calculateTime();
             renderHistoryTable();
             startLiveTimer();
+            const requestedView = new URLSearchParams(window.location.search).get('view');
+            if (requestedView === 'history' || requestedView === 'settings') {
+                switchTab(requestedView);
+            }
         };
 
         function toggleDevMode() {
@@ -492,7 +525,7 @@
                 tab = 'today';
             }
 
-            const views = ['today', 'history', 'vpn', 'roadmap'];
+            const views = ['today', 'history', 'settings', 'vpn', 'roadmap'];
             views.forEach(v => {
                 const viewEl = document.getElementById(`view-${v}`);
                 if (viewEl) {
@@ -542,13 +575,11 @@
             const exit1 = document.getElementById('t-exit1').value;
             const entry2 = document.getElementById('t-entry2').value;
             const exit2 = document.getElementById('t-exit2').value;
-            const targetWorkHours = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
-
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
-            const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours, nowMinutes });
+            const summary = calculateSummary({ entry1, exit1, entry2, exit2, workProfile, nowMinutes });
 
-            updateFieldValidation(getPontoFieldIssues({ entry1, exit1, entry2, exit2 }));
+            updateFieldValidation(getPontoFieldIssues({ entry1, exit1, entry2, exit2, workProfile }));
 
             document.getElementById('worked-time-text').innerText = formatMinutesToHM(summary.workedMinutes);
             document.getElementById('remaining-time-text').innerText = formatMinutesToHM(summary.remainingMinutes);
@@ -566,7 +597,14 @@
             }
 
             const badge = document.getElementById('badge-status');
-            if (!summary.validation.valid) {
+            const allTimesPresent = [entry1, exit1, entry2, exit2].every(value => parseMinutes(value) !== null);
+            if (allTimesPresent && summary.compliance.isConforme) {
+                badge.innerText = 'Dentro do Perfil Configurado';
+                badge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else if (allTimesPresent && !summary.compliance.isConforme) {
+                badge.innerText = 'Fora do Perfil Configurado';
+                badge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30';
+            } else if (!summary.validation.valid) {
                 badge.innerText = summary.validation.message;
                 badge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30';
             } else {
@@ -631,8 +669,7 @@
                 }
 
                 if (e1 !== null && s1 !== null && s1 > e1 && e2 !== null) {
-                    const targetStr = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
-                    const targetMins = parseMinutes(targetStr) || parseMinutes(DEFAULT_TARGET_WORK_HOURS);
+                    const targetMins = workProfile.targetMinutes;
                     const shift1Worked = Math.max(0, s1 - e1);
                     const remainingAfterMorning = Math.max(0, targetMins - shift1Worked);
                     const targetExitMin = e2 + remainingAfterMorning;
@@ -684,9 +721,7 @@
             const exit1 = document.getElementById('t-exit1').value;
             const entry2 = document.getElementById('t-entry2').value;
             const exit2 = document.getElementById('t-exit2').value;
-            const targetWorkHours = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
-
-            const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, targetWorkHours });
+            const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, workProfile });
             if (!result.valid) {
                 showToast(result.message);
                 return;
@@ -780,8 +815,7 @@
             Notification.requestPermission().then(permission => {
                 if (permission === "granted") {
                     showToast("Notificações ativadas com sucesso!");
-                    const target = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
-                    new Notification("Ponto Certo", { body: `Você será notificado quando atingir ${formatMinutesToHM(parseMinutes(target) || 8 * 60)} de trabalho!` });
+                    new Notification("Ponto Certo", { body: `Você será notificado quando atingir ${formatMinutesToHM(workProfile.targetMinutes)} de trabalho!` });
                 } else {
                     showToast("Permissão de notificação negada.");
                 }
@@ -792,9 +826,8 @@
             const today = getLocalDateKey();
             if (notifiedToday && notifiedDate === today) return;
             if ("Notification" in window && Notification.permission === "granted") {
-                const target = document.getElementById('target-work-hours').value || DEFAULT_TARGET_WORK_HOURS;
                 new Notification("Ponto Certo - Hora de Sair!", {
-                    body: `Você completou ${formatMinutesToHM(parseMinutes(target) || parseMinutes(DEFAULT_TARGET_WORK_HOURS))} de trabalho hoje! Lembre-se de bater o ponto e desconectar a VPN.`,
+                    body: `Você completou ${formatMinutesToHM(workProfile.targetMinutes)} de trabalho hoje! Lembre-se de bater o ponto e desconectar a VPN.`,
                     icon: "https://cdn-icons-png.flaticon.com/512/2838/2838779.png"
                 });
                 notifiedToday = true;

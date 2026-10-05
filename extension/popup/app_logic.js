@@ -1,9 +1,50 @@
-import { DEFAULT_TARGET_WORK_HOURS, getLocalDateKey, getPontoFieldIssues, parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary, validateTimeSegments } from '../../shared/js/time_core.js';
+import { DEFAULT_WORK_PROFILE, getLocalDateKey, getPontoFieldIssues, normalizeWorkProfile, parseMinutes, formatMinutesToHM, formatMinutesToTime, calculateSummary, validateTimeSegments, validateWorkProfile } from '../../shared/js/time_core.js';
+import { mountWorkProfileForm } from '../../shared/js/work_profile_ui.js';
 export { validateTimeSegments };
 
 let historyData = [];
 let lastComplianceKey = null;
 const DRAFT_STORAGE_KEY = 'ponto_current_draft';
+const WORK_PROFILE_STORAGE_KEY = 'ponto_work_profile_v1';
+let workProfile = normalizeWorkProfile(DEFAULT_WORK_PROFILE);
+
+export function loadWorkProfile() {
+  try {
+    const rawProfile = localStorage.getItem(WORK_PROFILE_STORAGE_KEY);
+    if (!rawProfile) {
+      workProfile = normalizeWorkProfile(DEFAULT_WORK_PROFILE);
+      return workProfile;
+    }
+
+    const parsed = JSON.parse(rawProfile);
+    const validation = validateWorkProfile(parsed);
+    workProfile = validation.valid ? normalizeWorkProfile(parsed) : normalizeWorkProfile(DEFAULT_WORK_PROFILE);
+  } catch (error) {
+    console.warn('Não foi possível recuperar o perfil de jornada.', error);
+    workProfile = normalizeWorkProfile(DEFAULT_WORK_PROFILE);
+  }
+
+  return workProfile;
+}
+
+export function getWorkProfile() {
+  return workProfile;
+}
+
+export function saveWorkProfile(profile) {
+  const validation = validateWorkProfile(profile);
+  if (!validation.valid) return validation;
+
+  const normalized = normalizeWorkProfile(profile);
+  try {
+    localStorage.setItem(WORK_PROFILE_STORAGE_KEY, JSON.stringify(normalized));
+  } catch (error) {
+    return { valid: false, errors: ['Não foi possível salvar as configurações neste armazenamento.'] };
+  }
+
+  workProfile = normalized;
+  return { valid: true, profile: workProfile, errors: [] };
+}
 
 export function loadHistory() {
   historyData = JSON.parse(localStorage.getItem('ponto_history') || '[]');
@@ -18,12 +59,13 @@ export function findHistoryItem(date) {
   return historyData.find(item => item.date === date);
 }
 
-export function saveHistoryItem({ date, entry1, exit1, entry2, exit2, targetWorkHours = DEFAULT_TARGET_WORK_HOURS }) {
-  const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours });
+export function saveHistoryItem({ date, entry1, exit1, entry2, exit2, workProfile: selectedProfile = workProfile }) {
+  const profile = normalizeWorkProfile(selectedProfile);
+  const summary = calculateSummary({ entry1, exit1, entry2, exit2, workProfile: profile });
   if (!summary.validation.valid) return summary.validation;
 
   const { workedMinutes: worked, balanceMinutes: balance } = summary;
-  const item = { date, e1: entry1, s1: exit1, e2: entry2, s2: exit2, worked, balance };
+  const item = { date, e1: entry1, s1: exit1, e2: entry2, s2: exit2, worked, balance, workProfile: profile };
 
   historyData.unshift(item);
   localStorage.setItem('ponto_history', JSON.stringify(historyData));
@@ -74,6 +116,7 @@ const ids = {
   btnExit1: 'btn-almoco',
   btnEntry2: 'btn-volta',
   btnSave: 'btn-salvar',
+  btnHistory: 'btn-history',
   btnExport: 'btn-export',
   btnClear: 'btn-limpar'
 };
@@ -134,11 +177,13 @@ function updateComplianceUI(compliance) {
 
   if (compliance.isConforme) {
     box.className = 'compliance-box bg-emerald-950/40 border border-emerald-800 text-emerald-300';
-    statusEl.innerHTML = '<svg class="compliance-icon is-valid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg> Dia Conforme com as Regras';
+    statusEl.innerHTML = '<svg class="compliance-icon is-valid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg> Dentro do Perfil Configurado';
     box.classList.remove('hidden');
   } else {
     box.className = 'compliance-box bg-rose-950/40 border border-rose-800 text-rose-300';
-    statusEl.innerHTML = '<svg class="compliance-icon is-invalid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg> Dia Não Conforme';
+    const missingPunches = compliance.messages.some(message => message.startsWith('Faltam marcações obrigatórias'));
+    const status = missingPunches ? 'Aguardando as quatro batidas' : 'Fora do Perfil Configurado';
+    statusEl.innerHTML = `<svg class="compliance-icon is-invalid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg> ${status}`;
     compliance.messages.forEach(msg => {
       const li = document.createElement('li');
       li.textContent = msg;
@@ -152,11 +197,9 @@ function calculateTime() {
   const exit1 = getValue(ids.exit1);
   const entry2 = getValue(ids.entry2);
   const exit2 = getValue(ids.exit2);
-  const targetWorkHours = getValue(ids.targetWorkHours) || DEFAULT_TARGET_WORK_HOURS;
-
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const summary = calculateSummary({ entry1, exit1, entry2, exit2, targetWorkHours, nowMinutes });
+  const summary = calculateSummary({ entry1, exit1, entry2, exit2, workProfile, nowMinutes });
 
   const balanceEl = el('hours-balance');
   const workedEl = el('worked-time-text');
@@ -173,7 +216,7 @@ function calculateTime() {
   if (historyCountEl) historyCountEl.innerText = `${getHistoryData().length} registro(s)`;
 
   updateComplianceUI(summary.compliance);
-  updateFieldIssues(getPontoFieldIssues({ entry1, exit1, entry2, exit2 }));
+  updateFieldIssues(getPontoFieldIssues({ entry1, exit1, entry2, exit2, workProfile }));
   updateInputSuggestions(entry1, exit1, entry2, summary.targetMinutes);
 }
 
@@ -220,9 +263,7 @@ function saveTodayEntry() {
   const exit1 = getValue(ids.exit1);
   const entry2 = getValue(ids.entry2);
   const exit2 = getValue(ids.exit2);
-  const targetWorkHours = getValue(ids.targetWorkHours) || DEFAULT_TARGET_WORK_HOURS;
-
-  const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, targetWorkHours });
+  const result = saveHistoryItem({ date: dateStr, entry1, exit1, entry2, exit2, workProfile });
   if (!result.valid) {
     showToast(result.message);
     return;
@@ -284,6 +325,15 @@ function exportHistoryFile() {
   showToast('Arquivo CSV baixado!');
 }
 
+function openWebHistory() {
+  const historyUrl = 'https://azevedowba.github.io/pontocerto/?view=history';
+  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+    chrome.tabs.create({ url: historyUrl });
+    return;
+  }
+  window.open(historyUrl, '_blank', 'noopener');
+}
+
 function showToast(message) {
   const container = el('toast-container');
   if (!container) return;
@@ -308,6 +358,9 @@ function bindEvents() {
   const exit1Button = el(ids.btnExit1);
   const entry2Button = el(ids.btnEntry2);
   const saveButton = el(ids.btnSave);
+  const historyButton = el(ids.btnHistory);
+  const settingsButton = el('btn-settings-toggle');
+  const settingsPanel = el('work-profile-panel');
   const exportButton = el(ids.btnExport);
   const clearButton = el(ids.btnClear);
   const historyTable = el(ids.historyTableBody);
@@ -316,6 +369,17 @@ function bindEvents() {
   if (exit1Button) exit1Button.addEventListener('click', () => fillCurrentTime(ids.exit1));
   if (entry2Button) entry2Button.addEventListener('click', () => fillCurrentTime(ids.entry2));
   if (saveButton) saveButton.addEventListener('click', saveTodayEntry);
+  if (historyButton) historyButton.addEventListener('click', openWebHistory);
+  if (settingsButton && settingsPanel) {
+    settingsButton.addEventListener('click', () => {
+      const isOpening = settingsPanel.classList.contains('hidden');
+      settingsPanel.classList.toggle('hidden', !isOpening);
+      settingsButton.setAttribute('aria-expanded', String(isOpening));
+      if (isOpening) {
+        settingsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
   if (exportButton) exportButton.addEventListener('click', exportHistoryFile);
   if (clearButton) clearButton.addEventListener('click', clearTodayInputs);
 
@@ -371,10 +435,9 @@ function loadDraft() {
 }
 
 function initializeInputs() {
+  if (el(ids.targetWorkHours)) el(ids.targetWorkHours).value = formatMinutesToTime(workProfile.targetMinutes);
   const draft = loadDraft();
   if (draft) {
-    const savedTarget = draft.targetWorkHours === '08:10' ? DEFAULT_TARGET_WORK_HOURS : draft.targetWorkHours;
-    if (el(ids.targetWorkHours)) el(ids.targetWorkHours).value = savedTarget || DEFAULT_TARGET_WORK_HOURS;
     if (el(ids.entry1)) el(ids.entry1).value = draft.entry1 || '';
     if (el(ids.exit1)) el(ids.exit1).value = draft.exit1 || '';
     if (el(ids.entry2)) el(ids.entry2).value = draft.entry2 || '';
@@ -401,11 +464,21 @@ function initPopup() {
   // Inicialize a interface e o timer somente no documento do popup.
   if (!el('compliance-box')) return;
 
+  loadWorkProfile();
   loadHistory();
   initializeInputs();
   calculateTime();
   renderHistoryTable();
   bindEvents();
+  mountWorkProfileForm(el('work-profile-form-container'), {
+    profile: workProfile,
+    onSave: saveWorkProfile,
+    onSaved: (profile) => {
+    workProfile = profile;
+    if (el(ids.targetWorkHours)) el(ids.targetWorkHours).value = formatMinutesToTime(profile.targetMinutes);
+    calculateTime();
+    }
+  });
   startLiveTimer();
 }
 
