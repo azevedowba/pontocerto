@@ -204,10 +204,7 @@
                     </div>
 
                     <!-- Action Bar -->
-                    <div class="mt-6 pt-4 border-t border-slate-700/50 flex items-center justify-between">
-                        <div class="text-xs text-slate-400">
-                            Saldo do Dia: <span id="hours-balance" class="font-bold text-slate-200">00:00</span>
-                        </div>
+                    <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-end">
                         <button onclick="saveTodayToHistory()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5">
                             <i class="fa-solid fa-floppy-disk"></i> Salvar Registro
                         </button>
@@ -274,7 +271,8 @@
                                 <th class="p-3">Entrada 2</th>
                                 <th class="p-3">Saída 2</th>
                                 <th class="p-3">Total Trabalhado</th>
-                                <th class="p-3">Saldo (Meta 8h00m)</th>
+                                <th class="p-3">Variação diária</th>
+                                <th class="p-3">Contabilização</th>
                                 <th class="p-3 rounded-r-xl text-right">Ação</th>
                             </tr>
                         </thead>
@@ -406,7 +404,7 @@
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <script type="module">
-        import { getLocalDateKey, getPontoFieldIssues, formatMinutesToTime, parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
+        import { DEFAULT_WORK_PROFILE, getLocalDateKey, getPontoFieldIssues, formatMinutesToTime, parseMinutes, formatMinutesToHM, calculateSummary } from './shared/js/time_core.js';
         import { loadHistory, loadWorkProfile, saveHistoryItem, deleteHistoryItem as removeHistoryItem, exportHistoryCSV as exportHistoryCSVApp, getHistoryData, findHistoryItem, saveWorkProfile } from './extension/popup/app_logic.js';
         import { mountWorkProfileForm } from './shared/js/work_profile_ui.js';
 
@@ -583,8 +581,6 @@
 
             document.getElementById('worked-time-text').innerText = formatMinutesToHM(summary.workedMinutes);
             document.getElementById('remaining-time-text').innerText = formatMinutesToHM(summary.remainingMinutes);
-            const balanceSign = summary.balanceMinutes > 0 ? '+' : '';
-            document.getElementById('hours-balance').innerText = `${balanceSign}${formatMinutesToHM(summary.balanceMinutes)}`;
             document.getElementById('progress-bar').style.width = `${summary.progressPct}%`;
             document.getElementById('progress-bar').setAttribute('aria-valuenow', String(summary.progressPct));
             document.getElementById('vpn-calculated-hours').innerText = `${summary.hoursDecimal} Horas (${summary.remainingMinutes} minutos)`;
@@ -741,20 +737,65 @@
 
             if (historyData.length === 0) {
                 emptyMsg.classList.remove('hidden');
-                document.getElementById('total-bank-balance').innerText = "+00:00";
+                const totalBalanceElement = document.getElementById('total-bank-balance');
+                totalBalanceElement.className = 'text-emerald-400 text-sm ml-1 font-bold';
+                totalBalanceElement.innerText = '00h 00m';
                 return;
             }
             emptyMsg.classList.add('hidden');
 
-            let totalBank = 0;
+            const records = historyData.map((item, idx) => {
+                const punches = [item.e1, item.s1, item.e2, item.s2];
+                const complete = punches.every(value => parseMinutes(value) !== null);
+                if (!complete) {
+                    return { item, idx, dateKey: item.date || `registro-${idx}`, balance: null, worked: item.worked, status: 'Pendente' };
+                }
 
-            historyData.forEach((item, idx) => {
-                totalBank += item.balance;
+                const profile = item.workProfile || DEFAULT_WORK_PROFILE;
+                const summary = calculateSummary({
+                    entry1: item.e1,
+                    exit1: item.s1,
+                    entry2: item.e2,
+                    exit2: item.s2,
+                    workProfile: profile
+                });
+                if (!summary.validation.valid) {
+                    return { item, idx, dateKey: item.date || `registro-${idx}`, balance: null, worked: item.worked, status: 'Inválido' };
+                }
+
+                const balance = item.workProfile || !Number.isFinite(item.balance)
+                    ? summary.balanceMinutes
+                    : item.balance;
+                return {
+                    item,
+                    idx,
+                    dateKey: item.date || `registro-${idx}`,
+                    balance,
+                    worked: summary.workedMinutes,
+                    status: 'Completo'
+                };
+            });
+
+            const countedRecordByDate = new Map();
+            records.forEach((record) => {
+                if (record.balance !== null && !countedRecordByDate.has(record.dateKey)) {
+                    countedRecordByDate.set(record.dateKey, record.idx);
+                }
+            });
+
+            const totalBank = records.reduce((total, record) => (
+                countedRecordByDate.get(record.dateKey) === record.idx ? total + record.balance : total
+            ), 0);
+
+            records.forEach(({ item, idx, dateKey, balance, worked, status }) => {
+                const isCounted = countedRecordByDate.get(dateKey) === idx;
+                const balanceText = balance === null ? '--' : formatMinutesToHM(balance);
+                const balanceClass = balance === null
+                    ? 'text-slate-500'
+                    : balance >= 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold';
+                const bankStatus = balance === null ? status : isCounted ? 'No banco' : 'Substituído';
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800";
-
-                const balStr = formatMinutesToHM(item.balance);
-                const balClass = item.balance >= 0 ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold";
 
                 tr.innerHTML = `
                     <td class="p-3 font-medium text-white">${item.date}</td>
@@ -762,8 +803,9 @@
                     <td class="p-3">${item.s1 || '--'}</td>
                     <td class="p-3">${item.e2 || '--'}</td>
                     <td class="p-3">${item.s2 || '--'}</td>
-                    <td class="p-3">${formatMinutesToHM(item.worked)}</td>
-                    <td class="p-3 ${balClass}">${balStr}</td>
+                    <td class="p-3">${Number.isFinite(worked) ? formatMinutesToHM(worked) : '--'}</td>
+                    <td class="p-3 ${balanceClass}">${balanceText}</td>
+                    <td class="p-3 text-slate-400">${bankStatus}</td>
                     <td class="p-3 text-right">
                         <button onclick="deleteHistoryItem(${idx})" class="text-rose-400 hover:text-rose-300 p-1" title="Excluir">
                             <i class="fa-solid fa-trash"></i>
@@ -775,7 +817,8 @@
 
             const totalClass = totalBank >= 0 ? "text-emerald-400" : "text-rose-400";
             document.getElementById('total-bank-balance').className = `${totalClass} text-sm ml-1 font-bold`;
-            document.getElementById('total-bank-balance').innerText = formatMinutesToHM(totalBank);
+            const totalBankSign = totalBank > 0 ? '+' : '';
+            document.getElementById('total-bank-balance').innerText = `${totalBankSign}${formatMinutesToHM(totalBank)}`;
         }
 
         function deleteHistoryItem(idx) {
