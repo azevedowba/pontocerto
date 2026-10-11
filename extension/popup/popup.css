@@ -92,9 +92,9 @@ h1, h2, p { margin: 0; }
 .tile-stamp:focus-visible { outline: 2px solid var(--slate-300); outline-offset: -4px; }
 
 .field-group label { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--slate-400); font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; pointer-events: none; }
-.field-indicator { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
-.indicator-amber { color: var(--amber); } .indicator-coral { color: var(--rose); }
-.indicator-blue { color: var(--sky); } .indicator-green { color: var(--emerald); }
+.field-icon { width: 10px; height: 10px; flex: none; }
+.icon-amber { color: var(--amber); } .icon-orange { color: #fb923c; }
+.icon-blue { color: #60a5fa; } .icon-green { color: var(--emerald); }
 
 .input-field {
   position: relative; z-index: 1;

@@ -110,8 +110,8 @@
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-white">Batidas de Ponto do Dia</h2>
-                                <p class="text-xs text-slate-400">Insira os horários conforme seu registro na empresa</p>
+                                <h2 class="font-semibold text-white">Batidas de Ponto</h2>
+                                <p class="text-xs text-slate-400">Registre os horários do seu dia.</p>
                             </div>
                         </div>
 
@@ -126,28 +126,28 @@
                         <!-- Entry 1 -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-sun text-amber-400 text-xs"></i> 1. Entrada Manhã
+                                <i class="fa-solid fa-sun text-amber-400 text-xs"></i> Entrada Manhã
                             </label>
                             <input type="time" id="t-entry1" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
                         </div>
                         <!-- Exit 1 -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-utensils text-orange-400 text-xs"></i> 2. Saída Almoço
+                                <i class="fa-solid fa-utensils text-orange-400 text-xs"></i> Saída Almoço
                             </label>
                             <input type="time" id="t-exit1" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
                         </div>
                         <!-- Entry 2 -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-briefcase text-blue-400 text-xs"></i> 3. Volta Almoço
+                                <i class="fa-solid fa-briefcase text-blue-400 text-xs"></i> Volta Almoço
                             </label>
                             <input type="time" id="t-entry2" oninput="calculateTime()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
                         </div>
                         <!-- Exit 2 -->
                         <div class="space-y-1.5">
                             <label class="block text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-house text-emerald-400 text-xs"></i> 4. Saída Tarde
+                                <i class="fa-solid fa-house text-emerald-400 text-xs"></i> Saída Tarde
                             </label>
                             <input type="time" id="t-exit2" oninput="calculateTime()" placeholder="Automático" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-emerald-400 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
                         </div>
@@ -583,6 +583,8 @@
 
             document.getElementById('worked-time-text').innerText = formatMinutesToHM(summary.workedMinutes);
             document.getElementById('remaining-time-text').innerText = formatMinutesToHM(summary.remainingMinutes);
+            const balanceSign = summary.balanceMinutes > 0 ? '+' : '';
+            document.getElementById('hours-balance').innerText = `${balanceSign}${formatMinutesToHM(summary.balanceMinutes)}`;
             document.getElementById('progress-bar').style.width = `${summary.progressPct}%`;
             document.getElementById('progress-bar').setAttribute('aria-valuenow', String(summary.progressPct));
             document.getElementById('vpn-calculated-hours').innerText = `${summary.hoursDecimal} Horas (${summary.remainingMinutes} minutos)`;
