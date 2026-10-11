@@ -112,9 +112,6 @@ const ids = {
   historyCount: 'history-count',
   historyTableBody: 'history-table-body',
   historyEmptyMsg: 'history-empty-msg',
-  btnEntry1: 'btn-entrada',
-  btnExit1: 'btn-almoco',
-  btnEntry2: 'btn-volta',
   btnSave: 'btn-salvar',
   btnHistory: 'btn-history',
   btnExport: 'btn-export',
@@ -130,15 +127,13 @@ const getValue = (id) => {
 const DEFAULT_LUNCH_DURATION_MINUTES = 60; // 1 hora de almoço
 const DEFAULT_MORNING_SHIFT_MINUTES = 4 * 60; // 4 horas de turno da manhã
 
-function updateInputSuggestions(entry1, exit1, entry2, targetMinutes) {
+function updateInputSuggestions(entry1, exit1, entry2) {
   const entry1Input = el(ids.entry1);
   const exit1Input = el(ids.exit1);
   const entry2Input = el(ids.entry2);
-  const exit2Input = el(ids.exit2);
 
   if (exit1Input) exit1Input.placeholder = 'Automático';
   if (entry2Input) entry2Input.placeholder = 'Automático';
-  if (exit2Input) exit2Input.placeholder = 'Automático';
 
   const e1m = parseMinutes(entry1);
   const s1m = parseMinutes(exit1);
@@ -150,15 +145,13 @@ function updateInputSuggestions(entry1, exit1, entry2, targetMinutes) {
   if (s1m !== null && entry2Input && !entry2Input.value) {
     entry2Input.placeholder = formatMinutesToTime(s1m + DEFAULT_LUNCH_DURATION_MINUTES);
   }
-  if (e1m !== null && s1m !== null && e2m !== null && exit2Input && !exit2Input.value) {
-    const morningWorked = s1m - e1m;
-    const remainingWork = targetMinutes - morningWorked;
-    if (remainingWork > 0) {
-      exit2Input.placeholder = formatMinutesToTime(e2m + remainingWork);
-    } else {
-      exit2Input.placeholder = 'Meta atingida';
-    }
-  }
+}
+
+function updateTargetExitSuggestion(targetExit, targetMinutes) {
+  const display = el('target-exit-display');
+  const subtext = el('target-exit-subtext');
+  if (display) display.innerText = targetExit ? targetExit.label : '--:--';
+  if (subtext) subtext.innerText = `Para cumprir ${formatMinutesToHM(targetMinutes)} de trabalho líquido`;
 }
 
 function updateComplianceUI(compliance) {
@@ -217,7 +210,8 @@ function calculateTime() {
 
   updateComplianceUI(summary.compliance);
   updateFieldIssues(getPontoFieldIssues({ entry1, exit1, entry2, exit2, workProfile }));
-  updateInputSuggestions(entry1, exit1, entry2, summary.targetMinutes);
+  updateInputSuggestions(entry1, exit1, entry2);
+  updateTargetExitSuggestion(summary.targetExit, summary.targetMinutes);
 }
 
 function updateFieldIssues(issues) {
@@ -354,9 +348,6 @@ function showToast(message) {
 }
 
 function bindEvents() {
-  const entry1Button = el(ids.btnEntry1);
-  const exit1Button = el(ids.btnExit1);
-  const entry2Button = el(ids.btnEntry2);
   const saveButton = el(ids.btnSave);
   const historyButton = el(ids.btnHistory);
   const settingsButton = el('btn-settings-toggle');
@@ -365,9 +356,15 @@ function bindEvents() {
   const clearButton = el(ids.btnClear);
   const historyTable = el(ids.historyTableBody);
 
-  if (entry1Button) entry1Button.addEventListener('click', () => fillCurrentTime(ids.entry1));
-  if (exit1Button) exit1Button.addEventListener('click', () => fillCurrentTime(ids.exit1));
-  if (entry2Button) entry2Button.addEventListener('click', () => fillCurrentTime(ids.entry2));
+  document.querySelectorAll('.tile-stamp').forEach((button) => {
+    const tile = button.closest('.float-tile');
+    if (!tile) return;
+
+    tile.addEventListener('click', (event) => {
+      if (event.target.closest('.input-field')) return;
+      fillCurrentTime(button.dataset.inputId);
+    });
+  });
   if (saveButton) saveButton.addEventListener('click', saveTodayEntry);
   if (historyButton) historyButton.addEventListener('click', openWebHistory);
   if (settingsButton && settingsPanel) {

@@ -37,27 +37,31 @@
 
         <div class="field-grid">
           <div class="field-group float-tile">
+            <button type="button" class="tile-stamp" data-input-id="input-entrada-manha" aria-label="Registrar horário atual: Entrada manhã"></button>
             <label for="input-entrada-manha"><span class="field-indicator indicator-amber"></span>Entrada manhã</label>
             <input type="time" id="input-entrada-manha" class="input-field">
           </div>
           <div class="field-group float-tile">
+            <button type="button" class="tile-stamp" data-input-id="input-saida-almoco" aria-label="Registrar horário atual: Saída almoço"></button>
             <label for="input-saida-almoco"><span class="field-indicator indicator-coral"></span>Saída almoço</label>
             <input type="time" id="input-saida-almoco" class="input-field">
           </div>
           <div class="field-group float-tile">
+            <button type="button" class="tile-stamp" data-input-id="input-volta-almoco" aria-label="Registrar horário atual: Volta almoço"></button>
             <label for="input-volta-almoco"><span class="field-indicator indicator-blue"></span>Volta almoço</label>
             <input type="time" id="input-volta-almoco" class="input-field">
           </div>
           <div class="field-group float-tile tile-accent">
+            <button type="button" class="tile-stamp" data-input-id="input-saida-tarde" aria-label="Registrar horário atual: Saída tarde"></button>
             <label for="input-saida-tarde"><span class="field-indicator indicator-green"></span>Saída tarde</label>
             <input type="time" id="input-saida-tarde" placeholder="Automático" class="input-field input-accent">
           </div>
         </div>
 
-        <div class="quick-actions" aria-label="Registrar horário atual">
-          <button id="btn-entrada" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z"/></svg>Entrada</button>
-          <button id="btn-almoco" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v8M8 3v8M11 3v8M5 8h6M8 11v10M17 3v18M17 3c-3 2-4 5-4 9h4"/></svg>Almoço</button>
-          <button id="btn-volta" type="button" class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 6.4M3 17v-6h6"/></svg>Volta</button>
+        <div class="target-exit-suggestion" aria-live="polite">
+          <span class="target-exit-label">Horário ideal de saída tarde</span>
+          <strong id="target-exit-display">--:--</strong>
+          <p id="target-exit-subtext">Para cumprir 08h 00m de trabalho líquido</p>
         </div>
       </section>
 
